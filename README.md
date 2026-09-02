@@ -79,7 +79,7 @@ src/                 scoring and planning pipeline (run in order)
   model.py             sizes budgets, derives bids, allocates per-style spend
   build_xlsx.py        builds the Excel workbook
 data/                CSV outputs — full scored master, active roster, queue, excluded, group summary
-dashboard/           self-contained HTML performance dashboard (no build step, no dependencies)
+index.html           self-contained HTML performance dashboard (no build step, no dependencies)
 output/              Myntra_Campaign_Builder.xlsx — 7 tabs, formula-driven from a Control Panel
 docs/                strategy one-pager and weekly optimisation SOP
 ```
@@ -97,7 +97,13 @@ python src/build_xlsx.py   # -> Myntra_Campaign_Builder.xlsx
 Input is a CSV named `data.csv` with columns:
 `Style Id, Live Since (DD-MM-YYYY), Organic Impressions, Inorganic Impressions, Total Impressions, Health, Reasons`.
 
-Open `dashboard/index.html` directly in a browser — it needs no server.
+Open `index.html` directly in a browser — it needs no server.
+
+### Live dashboard
+
+`.github/workflows/pages.yml` deploys the dashboard to GitHub Pages on every push to `main`.
+Enable it once at **Settings → Pages → Source: GitHub Actions**, and the site goes live at
+`https://<your-username>.github.io/myntra-campaign-builder/`.
 
 ## Assumptions to replace with real numbers
 
