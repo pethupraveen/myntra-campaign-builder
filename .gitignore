@@ -1,0 +1,10 @@
+__pycache__/
+*.pyc
+.DS_Store
+.ipynb_checkpoints/
+# intermediate pipeline artefacts
+scored.csv
+grouped.csv
+final.csv
+summary.csv
+params.json
