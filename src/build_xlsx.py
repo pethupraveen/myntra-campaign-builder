@@ -178,6 +178,120 @@ for r in range(5,45):
     for col in range(9,16): wt.cell(row=r,column=col).border=BOX
 wt.freeze_panes='A5'
 
+# ---------------- Daily Tracker ----------------
+# Tracked per AD GROUP, not per style. At Rs 3.3/style/day a style yields ~1.7 clicks and
+# ~0.05 orders a day - unreadable. A group yields 10-79 clicks and 0.2-3.6 orders a day.
+DAYS=31; GRP=['AG1','AG2','AG3','AG4','AG5']
+LH=21; LS=22; LE=LS+DAYS*len(GRP)-1                      # log header / first row / last row
+dt=wb.create_sheet('Daily Tracker')
+dt['A1']='DAILY CAMPAIGN TRACKER — BY AD GROUP'; dt['A1'].font=TITLE
+dt['A2']='Enter the yellow columns once a day — 5 rows, about two minutes. Everything right of column H computes itself.'; dt['A2'].font=SUB
+dt['A3']='Track by ad group, never by style. One style gets ~1.7 clicks and 0.05 orders a day: a single order swings its ROI by 300%. A group gets 10-79 clicks a day, which is decision-grade.'; dt['A3'].font=SUB
+
+ws_cp="'Control Panel'"
+def cp(col,row):   return f"INDEX({ws_cp}!${col}$14:${col}$19,MATCH($B{row},{ws_cp}!$A$14:$A$19,0))"
+
+dt['A5']='Campaign start date'; dt['A5'].font=BOLD
+c=dt['B5']; c.value=pd.Timestamp('2026-09-07'); c.font=BLUE; c.fill=YFILL; c.number_format='dd-mmm-yyyy'; c.border=BOX
+dt['C5']='Dates down the log fill from this cell.'; dt['C5'].font=SUB
+
+dt['A7']='MONTH-TO-DATE PULSE'; dt['A7'].font=BOLD
+pulse=[('Days logged',            f'=COUNTIFS($B${LS}:$B${LE},"AG1",$D${LS}:$D${LE},">0")','0','Days with AG1 spend entered'),
+       ('MTD spend (Rs)',         f'=SUM($D${LS}:$D${LE})','#,##0',''),
+       ('On-pace spend (Rs)',     f'=B8*{ws_cp}!$B$5/{ws_cp}!$B$10','#,##0','Days logged x daily budget'),
+       ('Pace',                   '=IF(B10=0,"",B9/B10)','0%','Under 90% = bids are not clearing the auction'),
+       ('MTD clicks',             f'=SUM($F${LS}:$F${LE})','#,##0',''),
+       ('MTD orders',             f'=SUM($G${LS}:$G${LE})','#,##0',''),
+       ('MTD net revenue (Rs)',   f'=SUM($I${LS}:$I${LE})','#,##0','Gross less the assumed return rate — reconcile monthly'),
+       ('MTD ROI',                '=IF(B9=0,"",B14/B9)','0.00"x"','The only number that is actually measured'),
+       ('Measured account CVR',   '=IF(B12=0,"",B13/B12)','0.00%','Replaces the assumption'),
+       ('Planned account CVR',    f'=SUM({ws_cp}!$K$14:$K$19)/SUM({ws_cp}!$J$14:$J$19)','0.00%','Implied by the Control Panel'),
+       ('CVR vs plan',            '=IF(B16="","",B16/B17-1)','+0%;-0%','ROI moves with this one-for-one'),
+       ('Projected month-end ROI','=IF(OR(B16="",B17=0),"",'+f'{ws_cp}!$E$20*B16/B17)','0.00"x"','Blended target rescaled by measured CVR')]
+for i,(lbl,f,fmt,note) in enumerate(pulse):
+    r=8+i
+    dt.cell(row=r,column=1,value=lbl).font=BLK
+    c=dt.cell(row=r,column=2,value=f); c.font=BOLD; c.number_format=fmt; c.border=BOX
+    dt.cell(row=r,column=3,value=note).font=SUB
+dt.cell(row=20,column=1,value='Verdict').font=BOLD
+dt.cell(row=20,column=2,value=f'=IF(B16="","Awaiting data",IF(B19<{ws_cp}!$B$8,"BELOW FLOOR — recut every bid from measured CVR (see Bid Calibration)",IF(B19>{ws_cp}!$B$9,"ABOVE CEILING — raise bids, you are under-buying","INSIDE CORRIDOR — hold")))').font=BOLD
+
+dcols=['Date','AG','Group','Spend (Rs)','Impressions','Clicks','Orders','Gross Rev (Rs)',
+       'Net Rev (Rs)','Target Spend','Pace','CTR','Actual CPC','Max CPC','Day CVR','Day ROI',
+       'Cum Clicks','Cum Orders','Cum CVR','Cum ROI','DELIVERY CHECK (same day)','DECISION (needs 40 clicks + 10 orders)']
+hdr(dt,LH,dcols,[11,7,18,11,12,9,8,13,13,12,8,8,11,10,9,9,11,11,9,9,44,46])
+for i in range(DAYS*len(GRP)):
+    r=LS+i; g=GRP[i%len(GRP)]
+    a=dt.cell(row=r,column=1,value=f'=$B$5+INT((ROW()-{LS})/{len(GRP)})'); a.number_format='dd-mmm'
+    dt.cell(row=r,column=2,value=g).font=BLK
+    dt.cell(row=r,column=3,value=f'=IFERROR({cp("B",r)},"")').font=BLK
+    for col in [4,5,6,7,8]:                                   # input cells
+        c=dt.cell(row=r,column=col); c.fill=YFILL; c.font=BLUE
+    dt.cell(row=r,column=9, value=f'=IF(H{r}="","",H{r}*(1-{ws_cp}!$B$7))').number_format='#,##0'
+    dt.cell(row=r,column=10,value=f'=IFERROR({cp("H",r)},"")').number_format='#,##0'
+    dt.cell(row=r,column=11,value=f'=IF(OR(D{r}="",J{r}=0),"",D{r}/J{r})').number_format='0%'
+    dt.cell(row=r,column=12,value=f'=IF(OR(E{r}="",E{r}=0),"",F{r}/E{r})').number_format='0.00%'
+    dt.cell(row=r,column=13,value=f'=IF(OR(F{r}="",F{r}=0),"",D{r}/F{r})').number_format='#,##0.00'
+    dt.cell(row=r,column=14,value=f'=IFERROR({cp("I",r)},"")').number_format='#,##0.00'
+    dt.cell(row=r,column=15,value=f'=IF(OR(F{r}="",F{r}=0),"",G{r}/F{r})').number_format='0.00%'
+    dt.cell(row=r,column=16,value=f'=IF(OR(D{r}="",D{r}=0),"",I{r}/D{r})').number_format='0.00"x"'
+    dt.cell(row=r,column=17,value=f'=IF(D{r}="","",SUMIFS($F${LS}:$F{r},$B${LS}:$B{r},$B{r}))').number_format='#,##0'
+    dt.cell(row=r,column=18,value=f'=IF(D{r}="","",SUMIFS($G${LS}:$G{r},$B${LS}:$B{r},$B{r}))').number_format='#,##0'
+    dt.cell(row=r,column=19,value=f'=IF(OR(D{r}="",Q{r}=0),"",R{r}/Q{r})').number_format='0.00%'
+    dt.cell(row=r,column=20,value=f'=IF(D{r}="","",IFERROR(SUMIFS($I${LS}:$I{r},$B${LS}:$B{r},$B{r})/SUMIFS($D${LS}:$D{r},$B${LS}:$B{r},$B{r}),""))').number_format='0.00"x"'
+    dt.cell(row=r,column=21,value=(f'=IF(D{r}="","",'
+        f'IF(E{r}=0,"NO IMPRESSIONS — bid under the auction floor, or out of stock in core sizes",'
+        f'IF(K{r}<0.6,"UNDERSPENDING — bid is not clearing; raise toward the cap",'
+        f'IF(K{r}>1.15,"OVERSPEND — check the daily cap in Partner Portal",'
+        f'IF(M{r}>=N{r}*0.98,"BID-CAPPED — paying the max CPC; cannot scale without recutting the bid",'
+        f'"Delivering normally")))))')).font=BLK
+    dt.cell(row=r,column=22,value=(f'=IF(D{r}="","",'
+        f'IF(OR(Q{r}<40,R{r}<10),"COLLECTING — "&Q{r}&" clicks / "&R{r}&" orders (need 40 and 10)",'
+        f'IF(T{r}<{ws_cp}!$B$8,"BELOW FLOOR — cut bid 20%, recheck in 7 days",'
+        f'IF(T{r}>{ws_cp}!$B$9,"ABOVE CEILING — raise bid 15%, move budget in",'
+        f'"ON PLAN — hold, do not touch bids for 2 weeks"))))')).font=BOLD
+    for col in range(1,23): dt.cell(row=r,column=col).border=BOX
+dt.freeze_panes='D22'
+
+# ---------------- Bid Calibration ----------------
+# Closes the loop the bid formula leaves open: the bid is derived FROM assumed CVR, so a CVR
+# error passes straight into realised ROI. This tab re-derives every bid from measured CVR.
+bc=wb.create_sheet('Bid Calibration')
+bc['A1']='BID CALIBRATION — REPLACE THE CVR ASSUMPTION WITH MEASURED DATA'; bc['A1'].font=TITLE
+bc['A2']='Max CPC is derived FROM assumed CVR, so if CVR is wrong the bid is wrong and realised ROI misses target one-for-one. Nothing in the plan reveals that. This tab does, from the Daily Tracker.'; bc['A2'].font=SUB
+bcols=['AG','Group','Assumed CVR','Clicks to date','Orders to date','Measured CVR','Confidence',
+       'Current Max CPC','Corrected Max CPC','Bid change','Realised ROI','Days to reliable','ACTION']
+hdr(bc,4,bcols,[7,21,12,13,13,12,14,15,16,11,12,14,42])
+sm=summ.set_index('AG')
+for i,g in enumerate(GRP):
+    r=5+i; cr=14+i
+    bc.cell(row=r,column=1,value=g).font=BLK
+    bc.cell(row=r,column=2,value=sm.loc[g,'Group']).font=BLK
+    bc.cell(row=r,column=3,value=f"={ws_cp}!$F${cr}").number_format='0.00%'
+    bc.cell(row=r,column=4,value=f"=SUMIFS('Daily Tracker'!$F${LS}:$F${LE},'Daily Tracker'!$B${LS}:$B${LE},$A{r})").number_format='#,##0'
+    bc.cell(row=r,column=5,value=f"=SUMIFS('Daily Tracker'!$G${LS}:$G${LE},'Daily Tracker'!$B${LS}:$B${LE},$A{r})").number_format='#,##0'
+    bc.cell(row=r,column=6,value=f'=IF(D{r}=0,"",E{r}/D{r})').number_format='0.00%'
+    bc.cell(row=r,column=7,value=f'=IF(E{r}>=30,"RELIABLE",IF(E{r}>=10,"DIRECTIONAL",IF(E{r}>0,"TOO EARLY","NO DATA")))').font=BOLD
+    bc.cell(row=r,column=8,value=f"={ws_cp}!$I${cr}").number_format='#,##0.00'
+    bc.cell(row=r,column=9,value=f'=IF(F{r}="","",{ws_cp}!$B$6*F{r}*(1-{ws_cp}!$B$7)/{ws_cp}!$E${cr})').number_format='#,##0.00'
+    bc.cell(row=r,column=10,value=f'=IF(OR(I{r}="",H{r}=0),"",I{r}/H{r}-1)').number_format='+0%;-0%'
+    bc.cell(row=r,column=11,value=f'=IF(F{r}="","",{ws_cp}!$E${cr}*F{r}/C{r})').number_format='0.00"x"'
+    bc.cell(row=r,column=12,value=round(30/(sm.loc[g,'Monthly']/30/sm.loc[g,'MaxCPC']*sm.loc[g,'CVR']),1)).number_format='0.0'
+    bc.cell(row=r,column=13,value=(f'=IF(E{r}=0,"No data yet — log spend in Daily Tracker",'
+        f'IF(E{r}<10,"Keep collecting — "&E{r}&" of 10 orders",'
+        f'IF(ABS(J{r})<0.1,"Assumption holds — leave the bid alone",'
+        f'IF(E{r}<30,"DIRECTIONAL — move the bid halfway to the corrected figure",'
+        f'"RELIABLE — set Control Panel CVR to the measured figure"))))')).font=BOLD
+    for col in range(1,14): bc.cell(row=r,column=col).border=BOX
+bc.cell(row=11,column=1,value='HOW TO READ THIS').font=BOLD
+for i,t in enumerate([
+ 'Days to reliable = days of planned spend before a group accumulates 30 orders. AG1 8.4, AG2 12.0, AG4 23.6, AG3 48.5, AG5 137.5.',
+ 'AG3 and AG5 cannot produce a trustworthy CVR inside a month at their budgets. Judge them on clicks and CTR, not ROI, or consolidate their budget.',
+ 'Realised ROI = target ROI x (measured CVR / assumed CVR). This is the number the projection cannot show you.',
+ 'Corrected Max CPC = ASP x measured CVR x (1 - return rate) / target ROI. Same formula, real input.',
+ 'When confidence reads RELIABLE, type the measured CVR into Control Panel column F. Every bid, budget and projection reprices from it.']):
+    bc.cell(row=12+i,column=1,value=t).font=SUB
+
 # ---------------- Master ----------------
 mdf=df[['Style Id','AG','Group Name','Status','Live Since','Days Live','Organic Impressions','Inorganic Impressions',
         'Total Impressions','Organic/Day','Ad Saturation','Demand Score','Opportunity Score','Health','Rank in Group']].copy()

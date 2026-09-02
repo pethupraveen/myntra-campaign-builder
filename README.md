@@ -80,7 +80,7 @@ src/                 scoring and planning pipeline (run in order)
   build_xlsx.py        builds the Excel workbook
 data/                CSV outputs — full scored master, active roster, queue, excluded, group summary
 index.html           self-contained HTML performance dashboard (no build step, no dependencies)
-output/              Myntra_Campaign_Builder.xlsx — 7 tabs, formula-driven from a Control Panel
+output/              Myntra_Campaign_Builder.xlsx — 9 tabs, formula-driven from a Control Panel
 docs/                strategy one-pager and weekly optimisation SOP
 ```
 
@@ -104,6 +104,37 @@ Open `index.html` directly in a browser — it needs no server.
 `.github/workflows/pages.yml` deploys the dashboard to GitHub Pages on every push to `main`.
 Enable it once at **Settings → Pages → Source: GitHub Actions**, and the site goes live at
 `https://<your-username>.github.io/myntra-campaign-builder/`.
+
+## Tracking live performance
+
+The workbook carries two tracking tabs, both driven off the Control Panel.
+
+**`Daily Tracker`** — five rows a day, at **ad-group level**. Per style the daily numbers are noise
+(1.7 clicks, 0.08 orders a day); per group they are signal (10–79 clicks, 0.2–3.6 orders). Type
+spend, impressions, clicks, orders and gross revenue into the yellow columns; the tab computes
+pace, CTR, actual vs max CPC, cumulative CVR and cumulative ROI, plus a month-to-date pulse block.
+
+It separates two kinds of reading. `DELIVERY CHECK` is valid the same day — zero impressions means
+the bid is under the auction floor or the style is out of stock; spend below 60% of target means
+bids are not clearing. `DECISION` is gated: it stays on `COLLECTING` until the group has 40 clicks
+**and** 10 orders, so no bid moves on a three-day sample.
+
+**`Bid Calibration`** — assumed CVR against measured CVR per group, with every Max CPC re-derived
+from the measured figure. This is the tab that closes the plan's open loop: the bid is derived
+*from* assumed CVR, so a CVR error passes into realised ROI one-for-one, and the projection cannot
+reveal it — substitute the bid into the revenue formula and CVR cancels out, leaving
+`revenue = budget × target ROI`. Measured CVR is the only input that breaks the circularity.
+
+Days of planned spend before each group reaches 30 orders — the point its CVR is trustworthy:
+
+| AG1 | AG2 | AG4 | AG3 | AG5 |
+|---|---|---|---|---|
+| 8.4 | 12.0 | 23.6 | 48.5 | 137.5 |
+
+AG3 and AG5 cannot earn a reliable conversion rate inside a month at ₹65 and ₹25 a day. Judge them
+on clicks and CTR, or move their ₹1,700 into AG1 and AG2 where it buys an answer.
+
+`docs/strategy-and-sop.md` has the daily loop and the delivery-fault table.
 
 ## Assumptions to replace with real numbers
 
