@@ -80,7 +80,7 @@ src/                 scoring and planning pipeline (run in order)
   build_xlsx.py        builds the Excel workbook
 data/                CSV outputs — full scored master, active roster, queue, excluded, group summary
 index.html           self-contained HTML performance dashboard (no build step, no dependencies)
-output/              Myntra_Campaign_Builder.xlsx — 7 tabs, formula-driven from a Control Panel
+output/              Myntra_Campaign_Builder.xlsx — 9 tabs, formula-driven from a Control Panel
 docs/                strategy one-pager and weekly optimisation SOP
 ```
 
@@ -104,6 +104,39 @@ Open `index.html` directly in a browser — it needs no server.
 `.github/workflows/pages.yml` deploys the dashboard to GitHub Pages on every push to `main`.
 Enable it once at **Settings → Pages → Source: GitHub Actions**, and the site goes live at
 `https://<your-username>.github.io/myntra-campaign-builder/`.
+
+## Tracking the campaign day to day
+
+Two tabs, one in and one out.
+
+**`Daily Tracker`** — the input. Five rows a day, at **ad-group level**. Per style the daily numbers
+are noise (1.7 clicks, 0.08 orders a day); per group they are signal (10–79 clicks, 0.2–3.6 orders).
+Type spend, impressions, clicks, orders and gross revenue into the yellow columns; pace, CTR, actual
+vs max CPC, cumulative CVR and cumulative ROI compute themselves, and a one-word `Flag` marks the
+row.
+
+**`Daily Action Plan`** — the output. Put a date in `B4` and it reads that day back as a ranked plan:
+a `DO FIRST` line, a per-group reading, and a named action for each of the five groups.
+
+Every group lands on a priority code, and the code decides what it says:
+
+| | | |
+|---|---|---|
+| 1 | NO DELIVERY | zero impressions — bid under the auction floor, or out of stock |
+| 2 | UNDERSPENDING | pace below 60% — bids are not clearing auctions |
+| 3 | OVERSPEND | pace above 115% — the daily cap is set wrong |
+| 4 | BID-CAPPED | actual CPC pinned at max — bid-constrained, not budget-constrained |
+| 5 | BELOW FLOOR | cumulative ROI under the floor — cut the bid 20% |
+| 6 | ABOVE CEILING | cumulative ROI over the ceiling — raise the bid 15%, move budget in |
+| 7 | HOLD | still collecting, or inside the corridor — change nothing |
+
+The split matters. **1–4 are mechanical facts**, true the same day you read them: they say nothing
+about whether the campaign works, only whether the money is reaching the auction, and you fix them
+immediately. **5–6 are statistics**, and stay hidden until the group has 40 cumulative clicks and 10
+cumulative orders — so no bid moves on a three-day sample. A delivery fault always outranks a bid
+decision, because a group spending 40% of target has no ROI worth reading.
+
+`docs/strategy-and-sop.md` has the daily loop and the delivery-fault table.
 
 ## Assumptions to replace with real numbers
 

@@ -42,6 +42,57 @@ bad week.
 | ROI < 3.5x for 2 weeks | Pause the style. Promote the highest-ranked queued style in the same ad group. Log the pause — three pauses in one group means the group's CVR assumption is wrong, not the styles. |
 | Zero impressions | Not a performance problem. The bid is below the auction floor for that category, or the style is out of stock in core sizes. Check stock first, then raise the bid to the group ceiling. |
 
+## The daily loop — about two minutes
+
+Track **by ad group, never by style.** This is not a preference, it is arithmetic:
+
+| Unit | Clicks/day | Orders/day | Readable daily? |
+|---|---|---|---|
+| One style | 0.95 – 1.76 | 0.02 – 0.08 | No. One order swings its ROI by 300%. |
+| AG1 Hero Scale | 79.2 | 3.6 | Yes |
+| AG2 Rising Stars | 69.4 | 2.5 | Yes |
+| AG4 Steady Volume | 43.9 | 1.3 | Yes |
+| AG3 New Launch | 23.8 | 0.6 | Clicks yes, orders no |
+| AG5 Retest | 9.9 | 0.2 | Clicks only |
+
+A style needs ~40 clicks before its conversion rate means anything; at ₹3.29/day it takes 23 days to
+get there. A group clears 40 clicks in half a day to four days. So the group is the smallest unit
+that produces a daily signal.
+
+1. Open Partner Portal, pull yesterday at ad-group level: spend, impressions, clicks, orders, gross revenue.
+2. Type five rows into `Daily Tracker`. Only the yellow columns.
+3. Open `Daily Action Plan`, put yesterday's date in `B4`, and do what the `DO FIRST` line says.
+
+### What a day can and cannot tell you
+
+The plan separates two kinds of reading, and mixing them is the mistake the weekly rules used to
+allow.
+
+**Priorities 1–4 — delivery. Valid immediately, because they are mechanical facts, not statistics:**
+
+| Reading | Meaning | Fix today |
+|---|---|---|
+| Zero impressions | Bid is under the category auction floor, or core sizes are out of stock | Check stock, then raise the bid to the group ceiling |
+| Spend < 60% of daily target | Bids are not clearing auctions | Raise bid toward the cap |
+| Spend > 115% of target | Daily cap is set wrong in Partner Portal | Correct the cap |
+| Actual CPC pinned at Max CPC | You are bid-constrained, not budget-constrained | Nothing until the bid is recut from measured CVR |
+
+Underspending is the failure mode to watch. At a ₹2.02 bid the plan assumes it wins auctions; if it
+does not, the money simply never leaves the account and the whole ROI question is moot.
+
+**Priorities 5–6 — performance. Gated.** They stay hidden until the group has **40 cumulative clicks
+and 10 cumulative orders**; until then the plan reads `COLLECTING` and shows the running count.
+Acting on day-3 ROI is acting on noise.
+
+A delivery fault always outranks a bid decision. A group spending 40% of target has no ROI worth
+reading, and recutting its bid would fix the wrong thing.
+
+### Returns lag
+
+`Net Rev` applies the 30% return-rate assumption to the same day's gross. Real returns land 7–21
+days later, so the daily figure is an estimate and the first three weeks read optimistically.
+Reconcile once a month against the actual returns report and correct Control Panel B7.
+
 ## The weekly loop — about 40 minutes, every Monday
 
 1. **Pull the numbers.** Export last week's style-level report from Partner Portal. Paste spend,
