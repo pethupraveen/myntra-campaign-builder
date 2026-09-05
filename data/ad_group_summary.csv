@@ -1,7 +1,7 @@
 AG,Group,Total,Active,Queue,Pct,Monthly,Daily,TargetROAS,CVR,MaxCPC,Clicks,Orders,NetRevenue,PerStyleMonth,Thesis
-AG1,Hero Scale,121,45,76,0.32,4800.0,160.0,14.0,0.045,2.02,2373,106.8,67200,106.7,Proven winners: HEALTHY status + top-decile organic demand. Ads amplify what already sells.
-AG2,Rising Stars,591,42,549,0.3,4500.0,150.0,10.5,0.036,2.16,2086,75.1,47250,107.1,"High organic demand, near-zero ad exposure. The biggest untapped pool in the catalogue."
-AG3,New Launch Incubator,127,25,102,0.13,1950.0,65.0,6.0,0.026,2.73,715,18.6,11700,78.0,Live under 120 days with early traction. Buys ranking signal in the launch window.
-AG4,Steady Volume,1535,30,1505,0.2,3000.0,100.0,8.0,0.029,2.28,1315,38.1,24000,100.0,Mid-tier consistent performers. Efficiency base that holds blended ROI up.
-AG5,Ad-Dependent Retest,53,10,43,0.05,750.0,25.0,5.5,0.022,2.52,298,6.6,4125,75.0,"Previously advertised, weak organic. Small controlled retest at the ROI floor."
+AG1,Hero Scale,121,45,76,0.2580645161290322,3870.967741935484,129.03225806451613,14.0,0.045,2.02,1914,86.1,54194,86.0,Proven winners: HEALTHY status + top-decile organic demand. Ads amplify what already sells.
+AG2,Rising Stars,591,42,549,0.2419354838709677,3629.032258064516,120.96774193548389,10.5,0.036,2.16,1682,60.6,38105,86.4,"High organic demand, near-zero ad exposure. The biggest untapped pool in the catalogue."
+AG3,New Launch Incubator,127,25,102,0.1666666666666666,2500.0,83.33333333333333,6.0,0.026,2.73,917,23.8,15000,100.0,Live under 120 days with early traction. Buys ranking signal in the launch window.
+AG4,Steady Volume,1535,30,1505,0.1666666666666666,2500.0,83.33333333333333,8.0,0.029,2.28,1096,31.8,20000,83.3,Mid-tier consistent performers. Efficiency base that holds blended ROI up.
+AG5,Ad-Dependent Retest,53,10,43,0.1666666666666666,2500.0,83.33333333333333,5.5,0.022,2.52,993,21.8,13750,250.0,"Previously advertised, weak organic. Small controlled retest at the ROI floor."
 AG6,Dormant - Excluded,1955,0,0,0.0,0.0,0.0,0.0,0.0,0.0,0,0.0,0,0.0,"No ad spend. Fix listing quality, price or imagery before paying for traffic."

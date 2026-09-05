@@ -40,8 +40,8 @@ for lbl,val,fmt,note in inputs:
 ws.column_dimensions['A'].width=36; ws.column_dimensions['B'].width=14; ws.column_dimensions['C'].width=72
 
 ws['A12']='AD GROUP LEVERS  — edit Budget %, Target ROI and CVR per group'; ws['A12'].font=BOLD
-gcols=['Ad Group','Group Name','Active Styles','Budget %','Target ROI (ROAS)','Assumed CVR','Monthly Budget (Rs)','Daily Budget (Rs)','Max CPC Bid (Rs)','Est. Clicks/mo','Est. Orders/mo','Est. Net Revenue (Rs)']
-hdr(ws,13,gcols,[11,24,13,10,15,12,17,16,15,14,14,19])
+gcols=['Ad Group','Group Name','Active Styles','Budget %','Target ROI (ROAS)','Assumed CVR','Monthly Budget (Rs)','Daily Budget (Rs)','Max CPC Bid (Rs)','Est. Clicks/mo','Est. Orders/mo','Est. Net Revenue (Rs)','Portal Check']
+hdr(ws,13,gcols,[11,24,13,10,15,12,17,16,15,14,14,19,46])
 ws.freeze_panes=None
 # hdr() freezes panes; clearing that drops the <pane> but leaves a pane-bound <selection>
 # behind, which Excel rejects outright as a corrupt file. Drop the stale selection too.
@@ -59,7 +59,9 @@ for _,s in summ.iterrows():
     ws.cell(row=r,column=10,value=f'=IF(I{r}=0,0,G{r}/I{r})').number_format='#,##0'
     ws.cell(row=r,column=11,value=f'=J{r}*F{r}').number_format='#,##0.0'
     ws.cell(row=r,column=12,value=f'=K{r}*$B$6*(1-$B$7)').number_format='#,##0'
-    for col in range(1,13): ws.cell(row=r,column=col).border=BOX
+    ws.cell(row=r,column=13,value=(f'=IF(G{r}=0,"not funded",'
+        f'IF(G{r}<$B$35,"BELOW MIN - Myntra will reject this ad group","OK"))')).font=BOLD
+    for col in range(1,14): ws.cell(row=r,column=col).border=BOX
     r+=1
 tot=r
 ws.cell(row=tot,column=2,value='PORTFOLIO TOTAL').font=BOLD
@@ -68,6 +70,8 @@ for col,f,fmt in [(3,f'=SUM(C14:C{r-1})','0'),(4,f'=SUM(D14:D{r-1})','0%'),(7,f'
                   (11,f'=SUM(K14:K{r-1})','#,##0.0'),(12,f'=SUM(L14:L{r-1})','#,##0')]:
     c=ws.cell(row=tot,column=col,value=f); c.font=BOLD; c.number_format=fmt; c.border=BOX
 c=ws.cell(row=tot,column=5,value=f'=IF(G{tot}=0,0,L{tot}/G{tot})'); c.font=BOLD; c.number_format='0.00"x"'; c.border=BOX
+c=ws.cell(row=tot,column=13,value='=IF($B$5/$B$10<$B$36,"CAMPAIGN DAILY BELOW MIN - Myntra will reject the campaign","OK")')
+c.font=BOLD; c.border=BOX
 
 ws.cell(row=tot+2,column=1,value='BLENDED PORTFOLIO ROI').font=BOLD
 c=ws.cell(row=tot+2,column=2,value=f'=E{tot}'); c.font=BOLD; c.number_format='0.00"x"'
@@ -83,6 +87,17 @@ ws.cell(row=tot+8,column=1,value='Bid at or below this and the group cannot fall
 ws.cell(row=tot+10,column=1,value='LEGEND').font=BOLD
 ws.cell(row=tot+11,column=1,value='Yellow fill + blue text = your input cells. Everything else is a formula - do not overwrite.').font=SUB
 ws.cell(row=tot+12,column=1,value='Style-level tabs: Active Roster (spend now) | Rotation Queue (next in line) | Excluded (no ad spend).').font=SUB
+
+# Portal floors. These are not preferences - Partner Portal refuses a setup that breaks them,
+# so a plan that ignores them cannot be entered at all. src/model.py allocates against them.
+ws.cell(row=tot+14,column=1,value='PORTAL MINIMUMS — Myntra rejects any setup under these').font=BOLD
+for i,(lbl,val,fmt,note) in enumerate([
+        ('Min ad group budget (Rs/month)',2500,'#,##0','Every funded ad group must clear this'),
+        ('Min campaign budget (Rs/day)',250,'#,##0','Monthly Budget / Days in Month must clear this')]):
+    r2=tot+15+i
+    ws.cell(row=r2,column=1,value=lbl).font=BLK
+    c=ws.cell(row=r2,column=2,value=val); c.font=BLUE; c.fill=YFILL; c.number_format=fmt; c.border=BOX
+    ws.cell(row=r2,column=3,value=note).font=SUB
 
 # ---------------- 2. Ad Group Strategy ----------------
 ws2=wb.create_sheet('Ad Group Strategy')
@@ -192,7 +207,7 @@ dt['A1']='DAILY TRACKER — INPUT'; dt['A1'].font=TITLE
 dt['A2']='Five rows a day, about two minutes. Fill only the yellow columns; everything from column I rightwards computes itself.'; dt['A2'].font=SUB
 dt['A3']='Read the day back on the Daily Action Plan tab — this tab is for entry, that tab tells you what to do.'; dt['A3'].font=SUB
 
-dt['A5']='Campaign start date'; dt['A5'].font=BOLD
+dt['A5']='Start date'; dt['A5'].font=BOLD
 c=dt['B5']; c.value=pd.Timestamp('2026-09-07'); c.font=BLUE; c.fill=YFILL; c.number_format='dd-mmm-yyyy'; c.border=BOX
 dt['C5']='Dates down the log fill from this cell.'; dt['C5'].font=SUB
 
@@ -201,7 +216,8 @@ def cpq(col,row):  return f"INDEX({CP}!${col}$14:${col}$19,MATCH($B{row},{CP}!$A
 dcols=['Date','AG','Group','Spend (Rs)','Impressions','Clicks','Orders','Gross Rev (Rs)',
        'Net Rev (Rs)','Target Spend','Pace','CTR','Actual CPC','Max CPC','Day CVR','Day ROI',
        'Cum Clicks','Cum Orders','Cum CVR','Cum ROI','Flag']
-hdr(dt,LH,dcols,[11,7,20,11,12,9,8,13,13,12,8,8,11,10,9,9,11,11,9,9,14])
+# column B is 13 wide, not 7: it holds the AG code in the log but the start date in B5
+hdr(dt,LH,dcols,[11,13,20,11,12,9,8,13,13,12,8,8,11,10,9,9,11,11,9,9,14])
 for i in range(DAYS*len(GRP)):
     r=LS+i; g=GRP[i%len(GRP)]
     a=dt.cell(row=r,column=1,value=f'=$B$5+INT((ROW()-{LS})/{len(GRP)})'); a.number_format='dd-mmm'
@@ -241,7 +257,7 @@ ap['A1']='DAILY ACTION PLAN — OUTPUT'; ap['A1'].font=TITLE
 ap['A2']='Type a date in B4. This tab reads that day out of the Daily Tracker and tells you what to change today, in priority order.'; ap['A2'].font=SUB
 ap['A3']='Priority 1-4 are delivery faults — mechanical, valid the same day. Priority 5-6 are bid decisions, and only appear once the group has 40 clicks and 10 orders.'; ap['A3'].font=SUB
 
-ap['A4']='Plan for date'; ap['A4'].font=BOLD
+ap['A4']='Plan date'; ap['A4'].font=BOLD
 c=ap['B4']; c.value="='Daily Tracker'!$B$5"; c.font=BLUE; c.fill=YFILL; c.number_format='dd-mmm-yyyy'; c.border=BOX
 ap['C4']='Defaults to the campaign start date — overwrite it with the day you just logged.'; ap['C4'].font=SUB
 
@@ -256,7 +272,7 @@ ap['B6']=('="Logged "&COUNT($A$9:$A$13)&" of 5 groups  |  "&COUNTIF($A$9:$A$13,"
 
 acols=['Priority','AG','Group','Spend (Rs)','Target (Rs)','Pace','Impressions','Clicks','CTR','Orders',
        'Actual CPC','Max CPC','Day ROI','Cum Clicks','Cum Orders','Cum ROI','READING','ACTION FOR TODAY']
-hdr(ap,8,acols,[9,7,20,11,11,8,12,9,8,8,11,10,9,11,11,9,58,60])
+hdr(ap,8,acols,[11,13,20,11,11,8,12,9,8,8,11,10,9,11,11,9,58,60])
 
 # The severity ladder, written once: index i of these lists is priority code i+1.
 READ=['"Zero impressions — the bid is under the category auction floor, or core sizes are out of stock."',

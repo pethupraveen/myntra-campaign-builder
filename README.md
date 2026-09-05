@@ -19,17 +19,33 @@ wins no auctions. So the plan funds **152 styles** and deliberately excludes 1,9
 
 | AG  | Name                 | Selection rule                          | Pool  | Live | Budget      | Target ROI | Max CPC¹ |
 |-----|----------------------|-----------------------------------------|-------|------|-------------|------------|----------|
-| AG1 | Hero Scale           | `HEALTHY` and Demand Score ≥ 78          | 121   | 45   | ₹4,800 (32%) | 14.0x      | ₹2.02    |
-| AG2 | Rising Stars         | Demand Score ≥ 78                        | 591   | 42   | ₹4,500 (30%) | 10.5x      | ₹2.16    |
-| AG3 | New Launch Incubator | ≤ 120 days live and Demand Score 50–78   | 127   | 25   | ₹1,950 (13%) | 6.0x       | ₹2.73    |
-| AG4 | Steady Volume        | Demand Score 45–78                       | 1,535 | 30   | ₹3,000 (20%) | 8.0x       | ₹2.28    |
-| AG5 | Ad-Dependent Retest  | Demand Score < 45 with past paid impr.   | 53    | 10   | ₹750 (5%)    | 5.5x       | ₹2.52    |
+| AG1 | Hero Scale           | `HEALTHY` and Demand Score ≥ 78          | 121   | 45   | ₹3,871 (26%) | 14.0x      | ₹2.02    |
+| AG2 | Rising Stars         | Demand Score ≥ 78                        | 591   | 42   | ₹3,629 (24%) | 10.5x      | ₹2.16    |
+| AG3 | New Launch Incubator | ≤ 120 days live and Demand Score 50–78   | 127   | 25   | ₹2,500 (17%) | 6.0x       | ₹2.73    |
+| AG4 | Steady Volume        | Demand Score 45–78                       | 1,535 | 30   | ₹2,500 (17%) | 8.0x       | ₹2.28    |
+| AG5 | Ad-Dependent Retest  | Demand Score < 45 with past paid impr.   | 53    | 10   | ₹2,500 (17%) | 5.5x       | ₹2.52    |
 | AG6 | Dormant — Excluded   | Demand Score < 45, never advertised      | 1,955 | 0    | ₹0           | —          | —        |
 
 ¹ at the default ₹899 ASP / 30% return-rate assumption.
 
-Budget-weighted blend: **10.29x** — mid-corridor, with room to absorb a bad week.
-Projection: 6,787 clicks, 245 orders, ₹1,54,275 net revenue per month, ₹61 per order.
+Budget-weighted blend: **9.40x** — mid-corridor, with room to absorb a bad week.
+Projection: 6,602 clicks, 224 orders, ₹1,41,049 net revenue per month, ₹67 per order.
+
+### The portal minimums set the shares
+
+Myntra will not accept an ad group funded under **₹2,500 a month**, or a campaign whose daily budget
+is under **₹250**. These are not preferences — a plan that ignores them cannot be entered at all.
+
+That floor, not the strategy, is what fixes three of the five shares. The intended split was 32/30/13/20/5;
+on ₹15,000 that puts AG3 at ₹1,950 and AG5 at ₹750, both rejected at setup. `src/model.py` water-fills
+instead: anyone landing under the floor is pinned to it, and what remains is redivided among the rest
+until every funded group clears. AG3, AG4 and AG5 all end up pinned at ₹2,500, leaving ₹7,500 to split
+between AG1 and AG2 in their original 32:30 ratio.
+
+The cost is visible: forcing ₹2,500 into the weakest group pulls the blend from 10.29x to 9.40x, and
+gives AG5 ₹250 per style per month against AG1's ₹86. Five groups is the most ₹15,000 supports
+(5 × ₹2,500 = ₹12,500). If the floors ever outrun the budget, the model drops the least-committed
+group rather than thinning everyone below the line.
 
 ### Why a ladder rather than one target
 
@@ -110,7 +126,7 @@ Enable it once at **Settings → Pages → Source: GitHub Actions**, and the sit
 Two tabs, one in and one out.
 
 **`Daily Tracker`** — the input. Five rows a day, at **ad-group level**. Per style the daily numbers
-are noise (1.7 clicks, 0.08 orders a day); per group they are signal (10–79 clicks, 0.2–3.6 orders).
+are noise (1.2–3.3 clicks, 0.03–0.07 orders a day); per group they are signal (31–64 clicks, 0.7–2.9 orders).
 Type spend, impressions, clicks, orders and gross revenue into the yellow columns; pace, CTR, actual
 vs max CPC, cumulative CVR and cumulative ROI compute themselves, and a one-word `Flag` marks the
 row.

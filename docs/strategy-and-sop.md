@@ -10,6 +10,11 @@ the styles that convert.
 So the first decision is not *what to bid*. It is *what not to advertise*. Three quarters of the
 catalogue is out of the plan on purpose.
 
+The second decision is made for us. Myntra rejects an ad group funded under **₹2,500 a month** and a
+campaign under **₹250 a day**, so ₹15,000 buys at most five ad groups (5 × ₹2,500 = ₹12,500) no matter
+how the strategy would prefer to slice it. That floor pins AG3, AG4 and AG5 at ₹2,500 each and leaves
+₹7,500 to divide between the two strongest groups.
+
 ## How each style was scored
 
 - **Organic per day** — organic impressions divided by days live. An older style with 2,000
@@ -28,8 +33,9 @@ A single 15.5x target across every group would starve discovery: new styles have
 history, so they cannot clear a high bar and would never get funded. A single 5.5x target would
 leave money on the table with the proven winners. So the groups sit at different rungs — Hero Scale
 at 14x, Rising Stars at 10.5x, Steady Volume at 8x, New Launch at 6x, Retest at the 5.5x floor — and
-the budget-weighted blend lands at **10.29x**, comfortably inside the corridor with room to absorb a
-bad week.
+the budget-weighted blend lands at **9.40x**, comfortably inside the corridor with room to absorb a
+bad week. It would be 10.29x if the shares were free; the ₹2,500 ad-group floor forces ₹1,750 of extra
+spend into the 5.5x retest group and costs the blend most of that difference.
 
 ## Scale and cut rules
 
@@ -48,16 +54,16 @@ Track **by ad group, never by style.** This is not a preference, it is arithmeti
 
 | Unit | Clicks/day | Orders/day | Readable daily? |
 |---|---|---|---|
-| One style | 0.95 – 1.76 | 0.02 – 0.08 | No. One order swings its ROI by 300%. |
-| AG1 Hero Scale | 79.2 | 3.6 | Yes |
-| AG2 Rising Stars | 69.4 | 2.5 | Yes |
-| AG4 Steady Volume | 43.9 | 1.3 | Yes |
-| AG3 New Launch | 23.8 | 0.6 | Clicks yes, orders no |
-| AG5 Retest | 9.9 | 0.2 | Clicks only |
+| One style | 1.22 – 3.31 | 0.03 – 0.07 | No. One order swings its ROI by 300%. |
+| AG1 Hero Scale | 63.9 | 2.9 | Yes |
+| AG2 Rising Stars | 56.0 | 2.0 | Yes |
+| AG4 Steady Volume | 36.5 | 1.1 | Yes |
+| AG5 Retest | 33.1 | 0.7 | Clicks yes, orders no |
+| AG3 New Launch | 30.5 | 0.8 | Clicks yes, orders no |
 
-A style needs ~40 clicks before its conversion rate means anything; at ₹3.29/day it takes 23 days to
-get there. A group clears 40 clicks in half a day to four days. So the group is the smallest unit
-that produces a daily signal.
+A style needs ~40 clicks before its conversion rate means anything; at roughly 1.4 clicks a day that
+is about four weeks. A group clears 40 clicks in well under a day to a day and a half. So the group
+is the smallest unit that produces a daily signal.
 
 1. Open Partner Portal, pull yesterday at ad-group level: spend, impressions, clicks, orders, gross revenue.
 2. Type five rows into `Daily Tracker`. Only the yellow columns.
