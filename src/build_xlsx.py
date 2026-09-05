@@ -43,6 +43,9 @@ ws['A12']='AD GROUP LEVERS  — edit Budget %, Target ROI and CVR per group'; ws
 gcols=['Ad Group','Group Name','Active Styles','Budget %','Target ROI (ROAS)','Assumed CVR','Monthly Budget (Rs)','Daily Budget (Rs)','Max CPC Bid (Rs)','Est. Clicks/mo','Est. Orders/mo','Est. Net Revenue (Rs)']
 hdr(ws,13,gcols,[11,24,13,10,15,12,17,16,15,14,14,19])
 ws.freeze_panes=None
+# hdr() freezes panes; clearing that drops the <pane> but leaves a pane-bound <selection>
+# behind, which Excel rejects outright as a corrupt file. Drop the stale selection too.
+ws.sheet_view.selection=[]
 r=14
 for _,s in summ.iterrows():
     ws.cell(row=r,column=1,value=s.AG).font=BLK
@@ -285,8 +288,10 @@ for i,g in enumerate(GRP):
         f'IF(P{r}<{CP}!$B$8,5,IF(P{r}>{CP}!$B$9,6,7))))))))')).font=BOLD
     ap.cell(row=r,column=4,value=f'=SUMIFS({DTS},{DTD},$B$4,{DTG},$B{r})').number_format='#,##0'
     ap.cell(row=r,column=5,value=f'={CP}!$H${cr}').number_format='#,##0'
-    # Pace must not reference $A - the priority ladder in A reads F, and the pair would cycle.
-    ap.cell(row=r,column=6,value=f'=IF(E{r}=0,"",D{r}/E{r})').number_format='0%'
+    # Pace repeats the logged test rather than reading $A: the ladder in A reads pace, so
+    # pointing pace back at A would make the pair circular.
+    ap.cell(row=r,column=6,value=(f'=IF(OR(COUNTIFS({DTD},$B$4,{DTG},$B{r},{DTS},"<>")=0,E{r}=0),"",'
+                                  f'D{r}/E{r})')).number_format='0%'
     ap.cell(row=r,column=7,value=f'=SUMIFS({DTI},{DTD},$B$4,{DTG},$B{r})').number_format='#,##0'
     ap.cell(row=r,column=8,value=f'=SUMIFS({DTC},{DTD},$B$4,{DTG},$B{r})').number_format='#,##0'
     ap.cell(row=r,column=9,value=f'=IF(G{r}=0,"",H{r}/G{r})').number_format='0.00%'
