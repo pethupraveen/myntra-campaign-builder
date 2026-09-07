@@ -95,7 +95,9 @@ src/                 scoring and planning pipeline (run in order)
   model.py             sizes budgets, derives bids, allocates per-style spend
   build_xlsx.py        builds the Excel workbook
 data/                CSV outputs — full scored master, active roster, queue, excluded, group summary
-index.html           self-contained HTML performance dashboard (no build step, no dependencies)
+index.html           self-contained HTML dashboard — plan, roster, bid calculator, and a
+                     Performance tab that reads pasted Daily Tracker rows (no build step,
+                     no dependencies, no server)
 output/              Myntra_Campaign_Builder.xlsx — 9 tabs, formula-driven from a Control Panel
 docs/                strategy one-pager and weekly optimisation SOP
 ```
@@ -153,6 +155,21 @@ cumulative orders — so no bid moves on a three-day sample. A delivery fault al
 decision, because a group spending 40% of target has no ROI worth reading.
 
 `docs/strategy-and-sop.md` has the daily loop and the delivery-fault table.
+
+### Seeing it in the dashboard
+
+The dashboard's **Performance** tab is the same reading with the history attached. Select the filled
+rows in `Daily Tracker` from column A across to `Gross Rev`, copy, and paste them in — or load a CSV.
+It renders actual ROI against each group's target, spend pace, the cumulative blended curve and the
+same priority-ranked action list, then keeps the paste in that browser's local storage so it is still
+there tomorrow. Nothing is uploaded; the page has no server to upload to.
+
+The return-rate box on that tab is the dashboard's copy of Control Panel `B7` — change it and every
+net-revenue and ROI figure re-derives. Columns are read by position from the `AG` cell, so extra
+columns and header rows are ignored, a blank cell in a logged day counts as zero, and an entirely
+blank day is skipped. Dates copied as `07-Sep` carry no year in the clipboard: the tab assumes the
+current year and rolls forward when the sequence steps backwards, so format the column as
+`dd-mmm-yyyy` before copying if a log crosses a year boundary.
 
 ## Assumptions to replace with real numbers
 

@@ -164,6 +164,21 @@ input[type=search]:focus-visible{outline:2px solid var(--accent);outline-offset:
 .callout{border-left:2px solid var(--accent);background:var(--accent-soft);padding:14px 18px;border-radius:0 3px 3px 0;margin:18px 0}
 .callout p{margin:0;font-size:13px;color:var(--ink)}
 footer{margin-top:44px;padding-top:20px;border-top:1px solid var(--line);color:var(--ink3);font-size:12px;display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap}
+/* performance */
+.pbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:16px}
+.fbtn.pri{background:var(--accent);border-color:var(--accent);color:#fff}
+.numin{font:500 13px "IBM Plex Mono",monospace;padding:7px 9px;border:1px solid var(--line-2);border-radius:3px;
+  background:var(--surface);color:var(--ink);width:64px}
+.numin:focus-visible{outline:2px solid var(--accent);outline-offset:-1px;border-color:var(--accent)}
+.rrbox{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--ink2)}
+textarea.paste{width:100%;min-height:116px;font:400 12px "IBM Plex Mono",ui-monospace,monospace;padding:11px 13px;
+  border:1px solid var(--line-2);border-radius:3px;background:var(--surface);color:var(--ink);resize:vertical}
+textarea.paste:focus-visible{outline:2px solid var(--accent);outline-offset:-1px;border-color:var(--accent)}
+.empty{background:var(--surface);border:1px dashed var(--line-2);border-radius:4px;padding:38px 32px;text-align:center}
+.empty h3{font-size:15px;font-weight:600;letter-spacing:-.01em;color:var(--ink);margin-bottom:8px}
+.empty p{margin:0 auto;max-width:56ch;color:var(--ink2);font-size:13px}
+.rule .when .prio{font:600 10px "IBM Plex Mono",monospace;letter-spacing:.1em;color:var(--ink3);display:block;margin-bottom:2px}
+.err{color:var(--crit);font-size:12px}
 [hidden]{display:none!important}
 .tt{position:fixed;pointer-events:none;z-index:60;background:var(--ink);color:var(--paper);padding:8px 11px;border-radius:3px;
   font:500 12px "IBM Plex Sans";box-shadow:0 6px 20px rgba(0,0,0,.28);opacity:0;transition:opacity .1s;max-width:250px}
@@ -193,6 +208,7 @@ footer{margin-top:44px;padding-top:20px;border-top:1px solid var(--line);color:v
   <button class="tab" role="tab" aria-selected="false" data-p="groups">Ad Groups</button>
   <button class="tab" role="tab" aria-selected="false" data-p="roster">Style Roster</button>
   <button class="tab" role="tab" aria-selected="false" data-p="calc">Bid Calculator</button>
+  <button class="tab" role="tab" aria-selected="false" data-p="perf">Performance</button>
   <button class="tab" role="tab" aria-selected="false" data-p="play">Playbook &amp; SOP</button>
 </div></nav>
 
@@ -343,6 +359,87 @@ footer{margin-top:44px;padding-top:20px;border-top:1px solid var(--line);color:v
 
     <h4>Still missing from this plan</h4>
     <p>Three inputs would sharpen it materially: <strong>selling price per style</strong> (turns one blended bid per group into a bid per style), <strong>historical conversion rate</strong> (replaces the CVR assumptions with your real numbers), and <strong>category</strong> (auction floors differ enormously between, say, kurtas and footwear). Model names alone will make the roster readable &mdash; send them over and I will label all 4,382 rows.</p>
+  </div>
+</section>
+
+<!-- ================= PERFORMANCE ================= -->
+<section class="panel" id="p-perf" hidden>
+  <div class="sechead"><h2>Performance vs plan</h2><p>Every other tab is what was planned. This one is what happened &mdash; read straight out of the Daily Tracker.</p></div>
+
+  <div class="pbar">
+    <button class="fbtn pri" id="pPaste">Paste from Daily Tracker</button>
+    <label class="fbtn" for="pFile" style="cursor:pointer">Load a CSV</label>
+    <input type="file" id="pFile" accept=".csv,.tsv,.txt" hidden>
+    <span class="rrbox">Return rate <input class="numin" id="pRR" type="number" min="0" max="80" step="1" value="30">%</span>
+    <button class="fbtn" id="pClear" hidden>Clear data</button>
+    <span class="count" id="pStamp"></span>
+  </div>
+
+  <div id="pPasteBox" hidden style="margin-bottom:20px">
+    <p class="note" style="margin:0 0 9px">Open <b>Daily Tracker</b> in the workbook, select the filled rows from column&nbsp;A across to <b>Gross Rev</b> (column&nbsp;H), copy, and paste below. Extra columns are ignored, so selecting whole rows is fine; unfilled days are skipped. The paste stays in this browser &mdash; it is saved to local storage on this device and sent nowhere.</p>
+    <textarea class="paste" id="pText" spellcheck="false" placeholder="07-Sep&#9;AG1&#9;Hero Scale&#9;129&#9;4106&#9;64&#9;3&#9;2697&#10;07-Sep&#9;AG2&#9;Rising Stars&#9;121&#9;3820&#9;56&#9;2&#9;1798&#10;&hellip;"></textarea>
+    <div style="display:flex;gap:10px;align-items:center;margin-top:10px">
+      <button class="fbtn pri" id="pLoad">Read it</button>
+      <button class="fbtn" id="pCancel">Cancel</button>
+      <span class="err" id="pErr"></span>
+    </div>
+  </div>
+
+  <div class="empty" id="pEmpty">
+    <h3>No days logged yet</h3>
+    <p>Paste the Daily Tracker rows above and this tab fills in: actual ROI against each group&rsquo;s target, spend pace, the cumulative curve, and today&rsquo;s ranked action list. Delivery faults read from day one; bid decisions stay hidden until a group has 40 clicks and 10 orders, because a three-day ROI is noise.</p>
+  </div>
+
+  <div id="pBody" hidden>
+    <div class="corridor">
+      <div class="corridor-top">
+        <div class="hero">
+          <span class="big" id="pBig">&mdash;</span>
+          <span class="lab">Blended actual return on ad spend to date, net of returns. Plan says <b id="pPlanRoi">9.40x</b>.</span>
+        </div>
+        <span class="verdict" id="pVerdict"></span>
+      </div>
+      <div class="svgwrap"><svg id="pGroupSvg" width="1080" style="max-width:100%;height:auto" role="img" aria-label="Actual return on ad spend against target for each funded ad group"></svg></div>
+      <p class="note" style="margin:6px 0 0">A hollow ring is the group&rsquo;s target, the filled dot is what it actually returned. A group with fewer than 40 clicks or 10 orders shows no dot &mdash; its ROI has not earned an opinion yet.</p>
+    </div>
+
+    <div class="tiles" style="margin-top:20px" id="pKpis"></div>
+
+    <div class="grid2" style="margin-top:20px">
+      <div class="card">
+        <h3>Cumulative blended ROI by day</h3>
+        <p class="cap">Running net revenue &divide; running spend across all funded groups. Dashed while the sample is still under 40 clicks and 10 orders &mdash; that stretch is noise, not a trend.</p>
+        <div class="svgwrap"><svg id="pTrendSvg" viewBox="0 0 520 168" width="520" style="max-width:100%;height:auto" role="img" aria-label="Cumulative blended return on ad spend plotted by day against the 5.5x to 15.5x corridor"></svg></div>
+        <div class="legend">
+          <span class="lg"><span class="sw" style="background:var(--band)"></span>5.5x&ndash;15.5x corridor</span>
+          <span class="lg"><span class="sw" style="background:var(--accent)"></span>Blended actual</span>
+        </div>
+      </div>
+      <div class="card">
+        <h3>Spend pace against daily target</h3>
+        <p class="cap">Spend to date over what the plan budgeted for the days logged. Under 60% means bids are not clearing auctions and the money never leaves the account; over 115% means the daily cap is set wrong.</p>
+        <div class="svgwrap"><svg id="pPaceSvg" viewBox="0 0 520 168" width="520" style="max-width:100%;height:auto" role="img" aria-label="Spend pace by ad group against the 100 percent daily budget target"></svg></div>
+        <div class="legend" id="pPaceLegend"></div>
+      </div>
+    </div>
+
+    <div class="callout" id="pFirst"></div>
+
+    <div class="sechead" style="margin-top:24px"><h2>What to do today</h2><p>Ranked by urgency. A delivery fault always outranks a bid decision.</p></div>
+    <div class="rules" id="pActions"></div>
+
+    <div class="sechead" style="margin-top:28px"><h2>The numbers</h2><p id="pRange"></p></div>
+    <div class="tblwrap">
+      <table>
+        <thead><tr>
+          <th class="l">Ad group</th><th>Days</th><th>Spend</th><th>Pace</th><th>Impr.</th><th>Clicks</th>
+          <th>CTR</th><th>CPC</th><th>Max CPC</th><th>Orders</th><th>CVR</th><th>Assumed</th><th>Net rev</th><th>ROI</th><th>Target</th>
+        </tr></thead>
+        <tbody id="pRows"></tbody>
+        <tfoot id="pFoot"></tfoot>
+      </table>
+    </div>
+    <p class="note" style="margin-top:10px">Net revenue applies the return rate above to gross. Real returns land 7&ndash;21 days later, so the first three weeks read optimistically &mdash; reconcile monthly against the actual returns report and correct the rate here and in Control Panel B7.</p>
   </div>
 </section>
 
@@ -592,6 +689,350 @@ function calc(){
   ].map(([k,v,n])=>`<div class="tile"><span class="k">${k}</span><span class="v">${v}</span><span class="n">${n}</span></div>`).join('');
 }
 
+/* ---------- performance: reads the Daily Tracker back ----------
+   The workbook is the system of record; this tab is a viewer for it. Everything below is
+   derived from the five numbers a day per group - spend, impressions, clicks, orders, gross -
+   so the ladder here is the one the Daily Action Plan tab computes in formulas. Delivery
+   faults (1-4) read off the latest logged day because they are mechanical facts. Bid
+   decisions (5-6) read off the cumulative sample and stay gated until it is big enough. */
+const PKEY='mcb.perf.v1', PASP=899, GATE_C=40, GATE_O=10, FLOOR=5.5, CEIL=15.5;
+let PRR=.30, PSTATE=null;
+
+const MON={jan:0,feb:1,mar:2,apr:3,may:4,jun:5,jul:6,aug:7,sep:8,oct:9,nov:10,dec:11};
+const pnum=s=>{const t=String(s==null?'':s).replace(/[₹,\s%"]/g,''); if(!t) return NaN; const v=+t; return isFinite(v)?v:NaN;};
+function pdate(s){
+  s=String(s).trim(); let m;
+  if(m=s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/))                        return {y:+m[1],mo:+m[2]-1,d:+m[3]};
+  if(m=s.match(/^(\d{1,2})[-\/ ]([A-Za-z]{3,})(?:[-\/ ](\d{2,4}))?$/)){    /* "07-Sep" or "07-Sep-2026" */
+    const mo=MON[m[2].slice(0,3).toLowerCase()]; if(mo==null) return null;
+    return {y:m[3]?(+m[3]<100?2000+ +m[3]:+m[3]):null,mo:mo,d:+m[1]};}
+  if(m=s.match(/^(\d{1,2})[-\/](\d{1,2})[-\/](\d{2,4})/))              return {y:+m[3]<100?2000+ +m[3]:+m[3],mo:+m[2]-1,d:+m[1]};
+  return null;
+}
+/* Excel copies the log's Date column as "07-Sep" - the year is in the cell but not in the
+   clipboard. Assume the current year and roll forward whenever the sequence steps backwards,
+   which is right for any log kept in date order. */
+function presolveYears(rows){
+  let y=new Date().getFullYear(), prev=null;
+  rows.forEach(r=>{
+    if(r.dt.y!=null) y=r.dt.y;
+    else if(prev && (r.dt.mo<prev.mo || (r.dt.mo===prev.mo && r.dt.d<prev.d))) y++;
+    r.dt.y=y; prev={mo:r.dt.mo,d:r.dt.d};
+    r.t=new Date(y,r.dt.mo,r.dt.d);
+    r.key=y+'-'+String(r.dt.mo+1).padStart(2,'0')+'-'+String(r.dt.d).padStart(2,'0');
+  });
+}
+/* CSV, not TSV: Excel quotes any cell holding a thousands separator, so "1,290" is one field. */
+function psplit(line){
+  const out=[]; let cur='', q=false;
+  for(let i=0;i<line.length;i++){
+    const ch=line[i];
+    if(q){ if(ch==='"'){ if(line[i+1]==='"'){cur+='"';i++;} else q=false; } else cur+=ch; }
+    else if(ch==='"') q=true;
+    else if(ch===','){ out.push(cur); cur=''; }
+    else cur+=ch;
+  }
+  out.push(cur); return out;
+}
+function pparse(raw){
+  const rows=[]; let seenAG=0, dropped=0;
+  raw.split(/\r?\n/).forEach(line=>{
+    if(!line.trim()) return;
+    const cells=line.indexOf('\t')>=0 ? line.split('\t') : psplit(line);
+    const i=cells.findIndex(c=>/^\s*AG[1-5]\s*$/i.test(c));   /* headers and stray lines fall out here */
+    if(i<1) return;
+    seenAG++;
+    const dt=pdate(cells[i-1]); if(!dt){dropped++; return;}
+    /* Columns are read by position from the AG cell, never by "the next five numbers" - a day
+       with no orders is typed as a blank, and hunting for numbers would slide gross into its
+       place. The group name in column C is text, so a numeric cell right after AG means the
+       paste skipped it. */
+    const s0=i+(isNaN(pnum(cells[i+1]))?2:1);
+    const n=[pnum(cells[s0]),pnum(cells[s0+1]),pnum(cells[s0+2]),pnum(cells[s0+3]),pnum(cells[s0+4])];
+    if(isNaN(n[0])){ if(n.some(v=>!isNaN(v))) dropped++; return; }   /* no spend, no day */
+    for(let k=1;k<5;k++) if(isNaN(n[k])) n[k]=0;                     /* a blank is a zero once the day is logged */
+    rows.push({dt:dt,ag:cells[i].trim().toUpperCase(),spend:n[0],impr:n[1],clicks:n[2],orders:n[3],gross:n[4]});
+  });
+  rows.sort((a,b)=>(a.dt.y||0)-(b.dt.y||0)||a.dt.mo-b.dt.mo||a.dt.d-b.dt.d);
+  presolveYears(rows);
+  return {rows:rows,seenAG:seenAG,dropped:dropped};
+}
+
+function pcompute(rows){
+  const A=allocate(15000), by={}, days=new Set();
+  FUND.forEach(g=>{by[g.ag]={g:g,budget:A[g.ag]||0,rows:[],spend:0,impr:0,clicks:0,orders:0,gross:0};});
+  rows.forEach(r=>{
+    const b=by[r.ag]; if(!b) return;
+    b.rows.push(r); days.add(r.key);
+    b.spend+=r.spend; b.impr+=r.impr; b.clicks+=r.clicks; b.orders+=r.orders; b.gross+=r.gross;
+  });
+  const groups=Object.values(by).filter(b=>b.rows.length);
+  groups.forEach(b=>{
+    const g=b.g, dayTarget=b.budget/DAYS;
+    b.days=new Set(b.rows.map(r=>r.key)).size;
+    b.dayTarget=dayTarget;
+    b.net=b.gross*(1-PRR);
+    b.roi=b.spend>0 ? b.net/b.spend : 0;
+    b.pace=dayTarget>0 ? b.spend/(dayTarget*b.days) : 0;
+    b.ctr=b.impr>0 ? b.clicks/b.impr : 0;
+    b.cpc=b.clicks>0 ? b.spend/b.clicks : 0;
+    b.cvr=b.clicks>0 ? b.orders/b.clicks : 0;
+    b.maxcpc=PASP*g.cvr*(1-PRR)/g.roas;
+    b.gated=b.clicks>=GATE_C && b.orders>=GATE_O;
+    const last=b.rows[b.rows.length-1];
+    b.last=last;
+    b.lastPace=dayTarget>0 ? last.spend/dayTarget : 0;
+    b.lastCpc=last.clicks>0 ? last.spend/last.clicks : 0;
+    b.prio = last.impr===0            ? 1
+           : b.lastPace<0.6           ? 2
+           : b.lastPace>1.15          ? 3
+           : b.lastCpc>=b.maxcpc*0.98 ? 4
+           : b.gated && b.roi<FLOOR   ? 5
+           : b.gated && b.roi>CEIL    ? 6
+           : 7;
+  });
+  const dayKeys=[...days].sort();
+  let cs=0,cn=0,cc=0,co=0;
+  const curve=dayKeys.map(k=>{
+    rows.filter(r=>r.key===k).forEach(r=>{cs+=r.spend;cn+=r.gross*(1-PRR);cc+=r.clicks;co+=r.orders;});
+    return {key:k,roi:cs>0?cn/cs:0,gated:cc>=GATE_C&&co>=GATE_O,spend:cs,clicks:cc,orders:co};
+  });
+  const tot=groups.reduce((a,b)=>({spend:a.spend+b.spend,impr:a.impr+b.impr,clicks:a.clicks+b.clicks,
+    orders:a.orders+b.orders,gross:a.gross+b.gross}),{spend:0,impr:0,clicks:0,orders:0,gross:0});
+  tot.net=tot.gross*(1-PRR);
+  tot.roi=tot.spend>0?tot.net/tot.spend:0;
+  tot.days=dayKeys.length;
+  tot.pace=tot.days? tot.spend/(15000/DAYS*tot.days) : 0;
+  tot.gated=tot.clicks>=GATE_C&&tot.orders>=GATE_O;
+  return {groups:groups.sort((a,b)=>a.g.ag<b.g.ag?-1:1),curve:curve,tot:tot,dayKeys:dayKeys,
+          silent:FUND.filter(g=>!by[g.ag].rows.length)};
+}
+
+const pfmt=t=>t.toLocaleDateString('en-IN',{day:'2-digit',month:'short'});
+const PACT={
+  1:['NO DELIVERY',  b=>`Zero impressions on ${pfmt(b.last.t)}. Not a performance problem — the bid is under the category auction floor, or core sizes are out of stock. Check stock first, then raise the bid to the group ceiling.`],
+  2:['UNDERSPENDING',b=>`Spent ${inr(b.last.spend)} of the ${inr(b.dayTarget)} daily target — ${Math.round(b.lastPace*100)}%. Bids are not clearing auctions, so the money never leaves the account. Raise the bid toward ₹${b.maxcpc.toFixed(2)}.`],
+  3:['OVERSPEND',    b=>`Spent ${inr(b.last.spend)} against a ${inr(b.dayTarget)} target — ${Math.round(b.lastPace*100)}%. The daily cap is set wrong in Partner Portal. Correct the cap before reading anything else here.`],
+  4:['BID-CAPPED',   b=>`Actual CPC ₹${b.lastCpc.toFixed(2)} is pinned at the ₹${b.maxcpc.toFixed(2)} max. Bid-constrained, not budget-constrained — leave it until the bid is recut from measured CVR rather than the assumed ${(b.g.cvr*100).toFixed(1)}%.`],
+  5:['BELOW FLOOR',  b=>`${b.roi.toFixed(2)}x against a ${b.g.roas.toFixed(1)}x target, under the ${FLOOR}x floor on ${num(b.clicks)} clicks and ${num(b.orders)} orders. Cut the bid 20% and recheck in seven days. Any style that has spent over ₹150 with zero orders gets paused regardless.`],
+  6:['ABOVE CEILING',b=>`${b.roi.toFixed(2)}x, over the ${CEIL}x ceiling on ${num(b.clicks)} clicks. You are leaving volume on the table — raise the bid 15% and move budget in from the weakest funded group.`],
+  7:['HOLD',         b=>b.gated
+      ? `${b.roi.toFixed(2)}x against a ${b.g.roas.toFixed(1)}x target, inside the corridor, and delivery is clean. Change nothing.`
+      : `Collecting — ${num(b.clicks)} of ${GATE_C} clicks and ${num(b.orders)} of ${GATE_O} orders. Delivery is fine; no bid moves until the sample is there. Acting on this ROI now is acting on noise.`]
+};
+const PCLS={1:'c',2:'c',3:'w',4:'w',5:'c',6:'g',7:'g'};
+
+/* ---------- actual vs target by group ---------- */
+function pgroupChart(S){
+  const svg=document.getElementById('pGroupSvg'); svg.innerHTML='';
+  const n=S.groups.length, H=44+n*40+40, W=1080;
+  svg.setAttribute('viewBox','0 0 '+W+' '+H);
+  const X0=178,X1=1040,D0=0,D1=17, x=v=>X0+((Math.max(D0,Math.min(D1,v))-D0)/(D1-D0))*(X1-X0), AY=H-40;
+  svg.appendChild(el('rect',{x:x(FLOOR),y:8,width:x(CEIL)-x(FLOOR),height:AY-8,fill:'var(--band)',rx:2}));
+  for(const v of [FLOOR,CEIL]) svg.appendChild(el('line',{x1:x(v),y1:8,x2:x(v),y2:AY,stroke:'var(--s1)','stroke-width':1.5,'stroke-dasharray':'3 3',opacity:.55}));
+  svg.appendChild(el('line',{x1:X0,y1:AY,x2:X1,y2:AY,stroke:'var(--line-2)','stroke-width':1}));
+  for(let v=0;v<=16;v+=2){
+    svg.appendChild(el('line',{x1:x(v),y1:AY,x2:x(v),y2:AY+5,stroke:'var(--line-2)','stroke-width':1}));
+    svg.appendChild(el('text',{x:x(v),y:AY+21,fill:'var(--ink3)','font-size':10.5,'text-anchor':'middle','font-family':'IBM Plex Mono, monospace'},v+'x'));
+  }
+  svg.appendChild(el('text',{x:x(FLOOR),y:AY+36,fill:'var(--ink3)','font-size':10,'text-anchor':'middle','font-family':'IBM Plex Mono, monospace','letter-spacing':'.08em'},'FLOOR 5.5x'));
+  svg.appendChild(el('text',{x:x(CEIL),y:AY+36,fill:'var(--ink3)','font-size':10,'text-anchor':'middle','font-family':'IBM Plex Mono, monospace','letter-spacing':'.08em'},'CEILING 15.5x'));
+  /* shape carries target vs actual, colour carries the group */
+  const lx=X0+6;
+  svg.appendChild(el('circle',{cx:lx,cy:20,r:5.5,fill:'var(--surface)',stroke:'var(--ink3)','stroke-width':2}));
+  svg.appendChild(el('text',{x:lx+12,y:24,fill:'var(--ink3)','font-size':10.5,'font-family':'IBM Plex Mono, monospace','letter-spacing':'.08em'},'TARGET'));
+  svg.appendChild(el('circle',{cx:lx+88,cy:20,r:6.5,fill:'var(--ink3)'}));
+  svg.appendChild(el('text',{x:lx+100,y:24,fill:'var(--ink3)','font-size':10.5,'font-family':'IBM Plex Mono, monospace','letter-spacing':'.08em'},'ACTUAL TO DATE'));
+
+  S.groups.forEach((b,i)=>{
+    const y=54+i*40, c=AGC[b.g.ag], tx=x(b.g.roas);
+    svg.appendChild(el('rect',{x:0,y:y-9,width:9,height:18,rx:1.5,fill:c}));
+    svg.appendChild(el('text',{x:16,y:y+4,fill:'var(--ink)','font-size':12.5,'font-weight':600,'font-family':'Archivo, sans-serif'},b.g.name));
+    if(b.gated){
+      const ax=x(b.roi);
+      svg.appendChild(el('line',{x1:tx,y1:y,x2:ax,y2:y,stroke:c,'stroke-width':2,opacity:.45}));
+      svg.appendChild(el('circle',{cx:tx,cy:y,r:5.5,fill:'var(--surface)',stroke:c,'stroke-width':2}));
+      const dot=el('circle',{cx:ax,cy:y,r:7,fill:c,stroke:'var(--surface)','stroke-width':2});
+      svg.appendChild(dot);
+      bind(dot,`<b>${b.g.name}</b><br>Actual <b>${b.roi.toFixed(2)}x</b> vs target <b>${b.g.roas.toFixed(1)}x</b><br>${num(b.clicks)} clicks · ${num(b.orders)} orders · ${inr(b.spend)} spent`);
+      const right=ax<X1-70;
+      svg.appendChild(el('text',{x:ax+(right?14:-14),y:y+4,fill:'var(--ink)','font-size':12,'font-weight':600,
+        'text-anchor':right?'start':'end','font-family':'IBM Plex Mono, monospace'},b.roi.toFixed(2)+'x'));
+    }else{
+      const ring=el('circle',{cx:tx,cy:y,r:5.5,fill:'var(--surface)',stroke:c,'stroke-width':2});
+      svg.appendChild(ring);
+      bind(ring,`<b>${b.g.name}</b><br>Target <b>${b.g.roas.toFixed(1)}x</b><br>Collecting: ${num(b.clicks)}/${GATE_C} clicks, ${num(b.orders)}/${GATE_O} orders`);
+      svg.appendChild(el('text',{x:tx+14,y:y+4,fill:'var(--ink3)','font-size':10.5,'font-family':'IBM Plex Mono, monospace','letter-spacing':'.06em'},
+        'COLLECTING · '+num(b.clicks)+'/'+GATE_C+' CLICKS · '+num(b.orders)+'/'+GATE_O+' ORDERS'));
+    }
+  });
+}
+
+/* ---------- cumulative blended ROI ---------- */
+function ptrend(S){
+  const svg=document.getElementById('pTrendSvg'); svg.innerHTML='';
+  const W=520,H=168,PB=26,PT=10,PL=42, c=S.curve;
+  const top=Math.max(CEIL+2,Math.max.apply(null,c.map(p=>p.roi)))*1.05;
+  const x=i=>PL+(c.length<2?0:(i/(c.length-1))*(W-PL-8)), y=v=>H-PB-(Math.max(0,Math.min(top,v))/top)*(H-PB-PT);
+  svg.appendChild(el('rect',{x:PL,y:y(CEIL),width:W-PL-8,height:Math.max(0,y(FLOOR)-y(CEIL)),fill:'var(--band)',rx:2}));
+  [0,FLOOR,CEIL].forEach(v=>{
+    if(v>top) return;
+    svg.appendChild(el('line',{x1:PL,y1:y(v),x2:W-8,y2:y(v),stroke:'var(--line-2)','stroke-width':1,'stroke-dasharray':v?'4 3':''}));
+    svg.appendChild(el('text',{x:PL-6,y:y(v)+4,fill:'var(--ink3)','font-size':10,'text-anchor':'end','font-family':'IBM Plex Mono, monospace'},v+'x'));
+  });
+  const pts=c.map((p,i)=>[x(i),y(p.roi)]);
+  const seg=(a,dash)=>{ if(a.length<2) return;
+    svg.appendChild(el('polyline',{points:a.map(p=>p.join(',')).join(' '),fill:'none',stroke:'var(--accent)',
+      'stroke-width':2,'stroke-linejoin':'round','stroke-linecap':'round','stroke-dasharray':dash?'5 4':'',opacity:dash?.6:1}));};
+  const gi=c.findIndex(p=>p.gated);
+  if(gi<0) seg(pts,true); else { seg(pts.slice(0,gi+1),true); seg(pts.slice(gi),false); }
+  const lastI=c.length-1;
+  svg.appendChild(el('circle',{cx:x(lastI),cy:y(c[lastI].roi),r:4.5,fill:'var(--accent)',stroke:'var(--surface)','stroke-width':2}));
+  c.forEach((p,i)=>{                                   /* hit targets wider than the marks */
+    const w=Math.max(10,(W-PL-8)/Math.max(1,c.length));
+    const r=el('rect',{x:x(i)-w/2,y:PT,width:w,height:H-PB-PT,fill:'transparent'});
+    svg.appendChild(r);
+    bind(r,`<b>${pfmt(new Date(p.key+'T00:00:00'))}</b><br>Cumulative <b>${p.roi.toFixed(2)}x</b>${p.gated?'':' — still collecting'}<br>${inr(p.spend)} spent · ${num(p.clicks)} clicks · ${num(p.orders)} orders`);
+  });
+  const tick=(i,anchor)=>svg.appendChild(el('text',{x:x(i),y:H-8,fill:'var(--ink3)','font-size':10,'text-anchor':anchor,'font-family':'IBM Plex Mono, monospace'},pfmt(new Date(c[i].key+'T00:00:00'))));
+  tick(0,c.length<2?'middle':'start'); if(c.length>1) tick(lastI,'end');
+}
+
+/* ---------- spend pace ---------- */
+function ppace(S){
+  const svg=document.getElementById('pPaceSvg'); svg.innerHTML='';
+  const W=520,H=168,PT=8,PB=26,PL=136, n=S.groups.length;
+  const top=Math.max(1.3,Math.max.apply(null,S.groups.map(b=>b.pace)))*1.08, x=v=>PL+(v/top)*(W-PL-34);
+  const step=(H-PT-PB)/n, bh=Math.min(20,step-8);
+  S.groups.forEach((b,i)=>{
+    const y=PT+i*step+(step-bh)/2, w=Math.max(2,x(b.pace)-PL);
+    svg.appendChild(el('text',{x:PL-10,y:y+bh/2+4,fill:'var(--ink2)','font-size':10.5,'text-anchor':'end','font-family':'IBM Plex Sans, sans-serif'},b.g.name));
+    const r=el('rect',{x:PL,y:y,width:w,height:bh,rx:2,fill:AGC[b.g.ag],opacity:b.pace<0.6?.55:1});
+    svg.appendChild(r);
+    bind(r,`<b>${b.g.name}</b><br>Pace <b>${Math.round(b.pace*100)}%</b><br>${inr(b.spend)} of ${inr(b.dayTarget*b.days)} budgeted over ${b.days} day${b.days>1?'s':''}`);
+    svg.appendChild(el('text',{x:PL+w+7,y:y+bh/2+4,fill:'var(--ink2)','font-size':11,'font-family':'IBM Plex Mono, monospace'},Math.round(b.pace*100)+'%'));
+  });
+  svg.appendChild(el('line',{x1:x(1),y1:PT-2,x2:x(1),y2:H-PB+2,stroke:'var(--ink3)','stroke-width':1.5,'stroke-dasharray':'4 3'}));
+  svg.appendChild(el('text',{x:x(1),y:H-10,fill:'var(--ink3)','font-size':10,'text-anchor':'middle','font-family':'IBM Plex Mono, monospace','letter-spacing':'.08em'},'ON PLAN 100%'));
+  const lg=document.getElementById('pPaceLegend'); lg.innerHTML='';
+  S.groups.forEach(b=>{const s=document.createElement('span');s.className='lg';
+    s.innerHTML=`<span class="sw" style="background:${AGC[b.g.ag]}"></span>${b.g.name}`;lg.appendChild(s);});
+}
+
+/* ---------- render ---------- */
+function pdraw(){
+  if(!PSTATE) return;
+  const S=PSTATE, t=S.tot, planBl=FUND.reduce((s,g)=>s+g.pct*g.roas,0);
+  document.getElementById('pBig').textContent=t.roi.toFixed(2)+'x';
+  document.getElementById('pPlanRoi').textContent=planBl.toFixed(2)+'x';
+  const v=document.getElementById('pVerdict'), inside=t.roi>=FLOOR&&t.roi<=CEIL;
+  const col=!t.gated?'var(--ink3)':inside?'var(--good)':'var(--crit)';
+  v.style.background='color-mix(in srgb,'+col+' 12%,transparent)';
+  v.style.color=col; v.style.borderColor='color-mix(in srgb,'+col+' 34%,transparent)';
+  v.textContent = !t.gated ? `Collecting — ${num(t.clicks)}/${GATE_C} clicks, ${num(t.orders)}/${GATE_O} orders`
+    : inside ? 'Inside the 5.5x–15.5x corridor' : t.roi<FLOOR ? 'Below the 5.5x floor' : 'Above the 15.5x ceiling';
+
+  const dayBudget=15000/DAYS*t.days;
+  document.getElementById('pKpis').innerHTML=[
+    ['Days logged',num(t.days),pfmt(new Date(S.dayKeys[0]+'T00:00:00'))+' – '+pfmt(new Date(S.dayKeys[t.days-1]+'T00:00:00'))],
+    ['Spend to date',inr(t.spend),Math.round(t.pace*100)+'% of the '+inr(dayBudget)+' budgeted'],
+    ['Clicks',num(t.clicks),`${t.impr?(t.clicks/t.impr*100).toFixed(2):'0.00'}% CTR · ₹${t.clicks?(t.spend/t.clicks).toFixed(2):'0.00'} CPC`],
+    ['Orders',num(t.orders),`${t.clicks?(t.orders/t.clicks*100).toFixed(2):'0.00'}% conversion`],
+    ['Net revenue',inr(t.net),'after '+Math.round(PRR*100)+'% returns'],
+    ['Cost per order',t.orders?inr(t.spend/t.orders):'—','plan says ₹67']
+  ].map(([k,val,nt])=>`<div class="tile"><span class="k">${k}</span><span class="v">${val}</span><span class="n">${nt}</span></div>`).join('');
+
+  pgroupChart(S); ptrend(S); ppace(S);
+
+  const ranked=[...S.groups].sort((a,b)=>a.prio-b.prio||b.spend-a.spend), first=ranked[0];
+  document.getElementById('pFirst').innerHTML='<p><strong>Do first:</strong> '+(first.prio===7
+      ? 'nothing is broken. Every funded group is delivering and is either inside its corridor or still collecting — leave the bids alone.'
+      : first.g.name+' — '+PACT[first.prio][0].toLowerCase()+'. '+PACT[first.prio][1](first))+'</p>';
+  document.getElementById('pActions').innerHTML=ranked.map(b=>{
+    const a=PACT[b.prio];
+    return `<div class="rule ${PCLS[b.prio]}">
+      <span class="when"><span class="prio">PRIORITY ${b.prio}</span>${a[0]}</span>
+      <span class="then"><span class="chip" style="font-size:12.5px"><span class="sw" style="background:${AGC[b.g.ag]}"></span>${b.g.name}</span><br>${a[1](b)}</span></div>`;
+  }).join('');
+
+  document.getElementById('pRange').textContent=
+    num(t.days)+' day'+(t.days===1?'':'s')+' logged · '+num(S.groups.reduce((s,b)=>s+b.rows.length,0))+' rows read'
+    +(S.silent.length?' · nothing logged for '+S.silent.map(g=>g.name).join(', '):'');
+  document.getElementById('pRows').innerHTML=S.groups.map(b=>`<tr>
+    <td class="l"><span class="chip"><span class="sw" style="background:${AGC[b.g.ag]}"></span>${b.g.name}</span></td>
+    <td class="num">${b.days}</td><td class="num">${inr(b.spend)}</td>
+    <td class="num" style="color:${b.pace<0.6||b.pace>1.15?'var(--crit)':'var(--ink)'}">${Math.round(b.pace*100)}%</td>
+    <td class="num">${num(b.impr)}</td><td class="num">${num(b.clicks)}</td>
+    <td class="num">${(b.ctr*100).toFixed(2)}%</td>
+    <td class="num">₹${b.cpc.toFixed(2)}</td><td class="num" style="color:var(--ink3)">₹${b.maxcpc.toFixed(2)}</td>
+    <td class="num">${num(b.orders)}</td><td class="num">${(b.cvr*100).toFixed(2)}%</td>
+    <td class="num" style="color:var(--ink3)">${(b.g.cvr*100).toFixed(2)}%</td>
+    <td class="num">${inr(b.net)}</td>
+    <td class="num" style="font-weight:600">${b.gated?b.roi.toFixed(2)+'x':'<span class="pill off">collecting</span>'}</td>
+    <td class="num" style="color:var(--ink3)">${b.g.roas.toFixed(1)}x</td></tr>`).join('');
+  document.getElementById('pFoot').innerHTML=`<tr style="border-top:1px solid var(--line-2)">
+    <td class="l" style="font-weight:600">All funded groups</td><td class="num" style="font-weight:600">${t.days}</td>
+    <td class="num" style="font-weight:600">${inr(t.spend)}</td><td class="num" style="font-weight:600">${Math.round(t.pace*100)}%</td>
+    <td class="num">${num(t.impr)}</td><td class="num">${num(t.clicks)}</td>
+    <td class="num">${t.impr?(t.clicks/t.impr*100).toFixed(2):'0.00'}%</td>
+    <td class="num">₹${t.clicks?(t.spend/t.clicks).toFixed(2):'0.00'}</td><td></td>
+    <td class="num">${num(t.orders)}</td><td class="num">${t.clicks?(t.orders/t.clicks*100).toFixed(2):'0.00'}%</td><td></td>
+    <td class="num" style="font-weight:600">${inr(t.net)}</td>
+    <td class="num" style="font-weight:600">${t.gated?t.roi.toFixed(2)+'x':'—'}</td>
+    <td class="num" style="color:var(--ink3)">${planBl.toFixed(2)}x</td></tr>`;
+}
+
+function pshow(has){
+  document.getElementById('pEmpty').hidden=has;
+  document.getElementById('pBody').hidden=!has;
+  document.getElementById('pClear').hidden=!has;
+}
+function papply(raw,stamp){
+  const p=pparse(raw), err=document.getElementById('pErr');
+  if(!p.rows.length){
+    err.textContent = p.seenAG
+      ? `Found ${p.seenAG} ad-group row${p.seenAG===1?'':'s'} but no complete day — each row needs a date and all five numbers: spend, impressions, clicks, orders, gross revenue.`
+      : 'No AG1–AG5 rows found. Copy the log rows out of the Daily Tracker tab, starting at column A.';
+    return false;
+  }
+  err.textContent = p.dropped ? p.dropped+' incomplete row'+(p.dropped===1?'':'s')+' skipped.' : '';
+  PSTATE=pcompute(p.rows);
+  const ts=stamp||Date.now();
+  try{ localStorage.setItem(PKEY,JSON.stringify({raw:raw,rr:PRR,ts:ts})); }catch(e){}
+  document.getElementById('pStamp').textContent='Last read '+new Date(ts).toLocaleString('en-IN',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'});
+  pshow(true); pdraw();
+  return true;
+}
+function initPerf(){
+  const box=document.getElementById('pPasteBox'), ta=document.getElementById('pText');
+  document.getElementById('pPaste').onclick=()=>{box.hidden=!box.hidden; if(!box.hidden) ta.focus();};
+  document.getElementById('pCancel').onclick=()=>{box.hidden=true; document.getElementById('pErr').textContent='';};
+  document.getElementById('pLoad').onclick=()=>{ if(papply(ta.value)) box.hidden=true; };
+  document.getElementById('pFile').onchange=e=>{
+    const f=e.target.files[0]; if(!f) return;
+    const rd=new FileReader();
+    rd.onload=()=>{ ta.value=String(rd.result); if(!papply(ta.value)) box.hidden=false; };
+    rd.readAsText(f); e.target.value='';
+  };
+  document.getElementById('pClear').onclick=()=>{
+    try{ localStorage.removeItem(PKEY); }catch(e){}
+    PSTATE=null; ta.value=''; document.getElementById('pStamp').textContent='';
+    document.getElementById('pErr').textContent=''; pshow(false);
+  };
+  document.getElementById('pRR').addEventListener('input',e=>{
+    const val=+e.target.value; if(!isFinite(val)||val<0||val>80) return;
+    PRR=val/100;
+    if(PSTATE){ const s=psaved(); if(s&&s.raw) papply(s.raw,s.ts); }
+  });
+  const s=psaved();
+  if(s&&s.raw){
+    if(typeof s.rr==='number'){ PRR=s.rr; document.getElementById('pRR').value=Math.round(s.rr*100); }
+    ta.value=s.raw;
+    if(!papply(s.raw,s.ts)) pshow(false);
+  } else pshow(false);
+}
+function psaved(){ try{ return JSON.parse(localStorage.getItem(PKEY)||'null'); }catch(e){ return null; } }
+
 /* ---------- tabs ---------- */
 document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>{
   document.querySelectorAll('.tab').forEach(x=>x.setAttribute('aria-selected',String(x===t)));
@@ -599,12 +1040,12 @@ document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>{
   window.scrollTo({top:0,behavior:'instant'});
 });
 
-corridor();shares();hist();kpis();groups();initRoster();
+corridor();shares();hist();kpis();groups();initRoster();initPerf();
 ['asp','rr','cm','bud'].forEach(id=>document.getElementById(id).addEventListener('input',calc));
 calc();
 const mq=matchMedia('(prefers-color-scheme: dark)');
-mq.addEventListener&&mq.addEventListener('change',()=>{corridor();shares();hist();});
-new MutationObserver(()=>{corridor();shares();hist();}).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
+mq.addEventListener&&mq.addEventListener('change',()=>{corridor();shares();hist();pdraw();});
+new MutationObserver(()=>{corridor();shares();hist();pdraw();}).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
 </script>
 
 </body>

@@ -69,6 +69,10 @@ is the smallest unit that produces a daily signal.
 2. Type five rows into `Daily Tracker`. Only the yellow columns.
 3. Open `Daily Action Plan`, put yesterday's date in `B4`, and do what the `DO FIRST` line says.
 
+Once a week, paste the whole log into the dashboard's **Performance** tab. The workbook tells you
+about one day; that tab shows the same five groups against their targets with the history behind
+them — which is where a drift you cannot see day to day becomes obvious.
+
 ### What a day can and cannot tell you
 
 The plan separates two kinds of reading, and mixing them is the mistake the weekly rules used to
