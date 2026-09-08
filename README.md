@@ -94,12 +94,11 @@ src/                 scoring and planning pipeline (run in order)
   groups.py            assigns each style to an ad group
   model.py             sizes budgets, derives bids, allocates per-style spend
   build_xlsx.py        builds the Excel workbook
-data/                CSV outputs — full scored master, active roster, queue, excluded, group summary
-index.html           self-contained HTML dashboard — plan, roster, bid calculator, and a
-                     Performance tab that reads pasted Daily Tracker rows (no build step,
-                     no dependencies, no server)
-daily/index.html     Daily Desk — type the five ad-group rows into a form instead of pasting
-                     them, and get the dashboard and the ranked action list back
+data/                styles_scored.csv — all 4,382 styles with scores, group and status
+                     ad_group_summary.csv — the six groups with budgets, bids and projections
+index.html           the plan — how the budget splits, the roster, the bid calculator, the
+                     playbook (no build step, no dependencies, no server)
+daily/index.html     the Daily Desk — log each day, read the performance back, keep the record
 output/              Myntra_Campaign_Builder.xlsx — 9 tabs, formula-driven from a Control Panel
 docs/                strategy one-pager and weekly optimisation SOP
 ```
@@ -114,6 +113,10 @@ python src/model.py        # grouped.csv -> final.csv, summary.csv
 python src/build_xlsx.py   # -> Myntra_Campaign_Builder.xlsx
 ```
 
+The roster, queue and excluded lists are one filter off the master rather than their own
+files — `csvgrep -c Status -m ACTIVE data/styles_scored.csv`, or `Status == "QUEUE"` /
+`"EXCLUDED"` — and the workbook ships all three as separate tabs.
+
 Input is a CSV named `data.csv` with columns:
 `Style Id, Live Since (DD-MM-YYYY), Organic Impressions, Inorganic Impressions, Total Impressions, Health, Reasons`.
 
@@ -121,7 +124,8 @@ Open `index.html` directly in a browser — it needs no server.
 
 ### Live dashboard
 
-`.github/workflows/pages.yml` deploys the dashboard to GitHub Pages on every push to `main`.
+`.github/workflows/pages.yml` deploys the site to GitHub Pages on every push to `main` — the plan
+at the root, the Daily Desk at `/daily/`.
 Enable it once at **Settings → Pages → Source: GitHub Actions**, and the site goes live at
 `https://<your-username>.github.io/myntra-campaign-builder/`.
 
@@ -175,23 +179,16 @@ is the Control Panel's blue cells: budget, return rate, ROI floor and ceiling, d
 shares stay pinned to the ₹15,000 baseline, so changing the budget rescales every daily target and
 every Max CPC the way `Control Panel` does.
 
+Already have days in the workbook? **Records → Import from the workbook** takes a paste: select the
+filled `Daily Tracker` rows from column A across to `Gross Rev` (column H), copy, paste. Columns are
+read by position from the `AG` cell, so extra columns and header rows are ignored, a blank cell in a
+logged day counts as zero, and an entirely blank day is skipped. Dates copied as `07-Sep` carry no
+year in the clipboard: the importer assumes the current year and rolls forward when the sequence
+steps backwards, so format the column as `dd-mmm-yyyy` before copying if a log crosses a year
+boundary. Days that already exist are named before anything is replaced.
+
 Nothing is logged yet on a fresh page, so it opens on six clearly-marked sample days — the first save
 clears them.
-
-### Seeing it in the dashboard
-
-The dashboard's **Performance** tab is the same reading with the history attached. Select the filled
-rows in `Daily Tracker` from column A across to `Gross Rev`, copy, and paste them in — or load a CSV.
-It renders actual ROI against each group's target, spend pace, the cumulative blended curve and the
-same priority-ranked action list, then keeps the paste in that browser's local storage so it is still
-there tomorrow. Nothing is uploaded; the page has no server to upload to.
-
-The return-rate box on that tab is the dashboard's copy of Control Panel `B7` — change it and every
-net-revenue and ROI figure re-derives. Columns are read by position from the `AG` cell, so extra
-columns and header rows are ignored, a blank cell in a logged day counts as zero, and an entirely
-blank day is skipped. Dates copied as `07-Sep` carry no year in the clipboard: the tab assumes the
-current year and rolls forward when the sequence steps backwards, so format the column as
-`dd-mmm-yyyy` before copying if a log crosses a year boundary.
 
 ## Assumptions to replace with real numbers
 

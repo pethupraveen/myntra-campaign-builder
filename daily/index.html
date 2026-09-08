@@ -205,6 +205,12 @@ svg{display:block;width:100%;height:auto}
 .ladder b{color:var(--ink2)}
 .rechead{display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap;
   padding:14px 18px;border-bottom:1px solid var(--line)}
+.imp{padding:16px 18px;border-bottom:1px solid var(--line);background:var(--sunk)}
+.imp textarea{width:100%;height:132px;resize:vertical;background:var(--field);color:var(--ink);
+  border:1px solid var(--field-line);border-radius:7px;padding:10px 11px;
+  font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:12px;line-height:1.5;white-space:pre}
+.imp textarea:focus{outline:2px solid var(--accent);border-color:var(--accent)}
+.imp .muted{font-size:12.5px;max-width:78ch}
 footer{margin-top:34px;padding-top:18px;border-top:1px solid var(--line);
   color:var(--ink3);font-size:12px;display:flex;gap:20px;flex-wrap:wrap}
 .set{display:flex;gap:16px;flex-wrap:wrap;align-items:flex-end}
@@ -287,7 +293,8 @@ var state = {
   dirty:false,
   saving:false,
   msg:"",
-  db:null, dbTried:false, downloads:null
+  db:null, dbTried:false, downloads:null,
+  importOpen:false, importText:"", importNote:""
 };
 
 /* ---------------- helpers ---------------- */
@@ -783,12 +790,160 @@ function viewRec(){
     " saved" + (state.demo ? " (sample)" : " in the database") +
     ", newest first. Every row is one document keyed by its date.</p></div>" +
     '<div class="panel"><div class="rechead">' +
-      "<div class=\"muted\">Export writes one row per group per day — the same columns as the " +
-      "Daily Tracker tab.</div>" +
-      '<button class="act ghost" id="csv">Export CSV</button></div>' +
+      "<div class=\"muted\">One row per group per day, the same columns as the " +
+      "Daily Tracker tab — both ways.</div>" +
+      '<div style="display:flex;gap:10px">' +
+      '<button class="act ghost" id="imp">Import from the workbook</button>' +
+      '<button class="act ghost" id="csv">Export CSV</button></div></div>' +
+      importPanel() +
       '<div class="scroll"><table><thead><tr><th class="l">Date</th><th>Groups</th><th>Spend</th>' +
       "<th>Impr</th><th>Clicks</th><th>Orders</th><th>Gross</th><th>Net</th><th>ROI</th>" +
       '<th class="l">&nbsp;</th></tr></thead><tbody>' + rows + "</tbody></table></div></div></section>";
+}
+
+/* ------------------------------------------------------------------ *
+ * Import from the workbook. Typing is the normal way in, but a log that
+ * already exists in Daily Tracker should not be retyped — so the paste
+ * parser moves here from the old Performance tab rather than being
+ * rewritten. Rows land in state.days exactly as typed ones do.
+ * ------------------------------------------------------------------ */
+function importPanel(){
+  if(!state.importOpen) return "";
+  return '<div class="imp">' +
+    '<p class="muted" style="margin-bottom:9px">Open <b>Daily Tracker</b> in the workbook, select the ' +
+    'filled rows from column&nbsp;A across to <b>Gross Rev</b> (column&nbsp;H), copy, and paste below. ' +
+    'Extra columns are ignored, so whole rows are fine; unfilled days are skipped.</p>' +
+    '<textarea id="impText" spellcheck="false" placeholder="07-Sep&#9;AG1&#9;Hero Scale&#9;129&#9;4106&#9;64&#9;3&#9;2697">' +
+    esc(state.importText) + '</textarea>' +
+    '<div style="display:flex;gap:10px;align-items:center;margin-top:10px;flex-wrap:wrap">' +
+      '<button class="act" id="impRead">Read it</button>' +
+      '<button class="act ghost" id="impCancel">Cancel</button>' +
+      (state.importNote ? '<span style="font-size:12.5px;color:var(--ink2)">' +
+        esc(state.importNote) + '</span>' : "") +
+    '</div></div>';
+}
+
+var MON = {jan:0,feb:1,mar:2,apr:3,may:4,jun:5,jul:6,aug:7,sep:8,oct:9,nov:10,dec:11};
+function pnum(v){
+  var t = String(v == null ? "" : v).replace(/[₹,\s%"]/g, "");
+  if(!t) return NaN;
+  var x = +t; return isFinite(x) ? x : NaN;
+}
+function pdate(s){
+  s = String(s).trim(); var m;
+  if((m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/)))  return {y:+m[1], mo:+m[2]-1, d:+m[3]};
+  if((m = s.match(/^(\d{1,2})[-\/ ]([A-Za-z]{3,})(?:[-\/ ](\d{2,4}))?$/))){   /* "07-Sep" or "07-Sep-2026" */
+    var mo = MON[m[2].slice(0,3).toLowerCase()];
+    if(mo == null) return null;
+    return {y: m[3] ? (+m[3] < 100 ? 2000 + +m[3] : +m[3]) : null, mo:mo, d:+m[1]};
+  }
+  if((m = s.match(/^(\d{1,2})[-\/](\d{1,2})[-\/](\d{2,4})/)))
+    return {y: +m[3] < 100 ? 2000 + +m[3] : +m[3], mo:+m[2]-1, d:+m[1]};
+  return null;
+}
+/* Excel copies the Date column as "07-Sep" — the year is in the cell but not in the
+   clipboard. Assume the current year and roll forward whenever the sequence steps
+   backwards, which is right for any log kept in date order. */
+function presolveYears(rows){
+  var y = new Date().getFullYear(), prev = null;
+  rows.forEach(function(r){
+    if(r.dt.y != null) y = r.dt.y;
+    else if(prev && (r.dt.mo < prev.mo || (r.dt.mo === prev.mo && r.dt.d < prev.d))) y++;
+    r.dt.y = y; prev = {mo:r.dt.mo, d:r.dt.d};
+    r.key = y + "-" + String(r.dt.mo + 1).padStart(2, "0") + "-" + String(r.dt.d).padStart(2, "0");
+  });
+}
+/* CSV, not TSV: Excel quotes any cell holding a thousands separator, so "1,290" is one field. */
+function psplit(line){
+  var out = [], cur = "", q = false;
+  for(var i = 0; i < line.length; i++){
+    var ch = line[i];
+    if(q){ if(ch === '"'){ if(line[i+1] === '"'){ cur += '"'; i++; } else q = false; } else cur += ch; }
+    else if(ch === '"') q = true;
+    else if(ch === ","){ out.push(cur); cur = ""; }
+    else cur += ch;
+  }
+  out.push(cur); return out;
+}
+function pparse(raw){
+  var rows = [], seenAG = 0, dropped = 0;
+  raw.split(/\r?\n/).forEach(function(line){
+    if(!line.trim()) return;
+    var cells = line.indexOf("\t") >= 0 ? line.split("\t") : psplit(line);
+    var i = -1;
+    for(var c = 0; c < cells.length; c++) if(/^\s*AG[1-5]\s*$/i.test(cells[c])){ i = c; break; }
+    if(i < 1) return;                                  /* headers and stray lines fall out here */
+    seenAG++;
+    var dt = pdate(cells[i-1]);
+    if(!dt){ dropped++; return; }
+    /* Columns are read by position from the AG cell, never as "the next five numbers" — a day
+       with no orders is typed as a blank, and hunting for numbers would slide gross into its
+       place. The group name in column C is text, so a numeric cell right after AG means the
+       paste skipped it. */
+    var s0 = i + (isNaN(pnum(cells[i+1])) ? 2 : 1);
+    var n = [pnum(cells[s0]), pnum(cells[s0+1]), pnum(cells[s0+2]), pnum(cells[s0+3]), pnum(cells[s0+4])];
+    if(isNaN(n[0])){ if(n.some(function(v){ return !isNaN(v); })) dropped++; return; }  /* no spend, no day */
+    for(var k = 1; k < 5; k++) if(isNaN(n[k])) n[k] = 0;   /* a blank is a zero once the day is logged */
+    rows.push({dt:dt, ag:cells[i].trim().toUpperCase(),
+               spend:n[0], impr:n[1], clicks:n[2], orders:n[3], gross:n[4]});
+  });
+  rows.sort(function(a, b){
+    return (a.dt.y || 0) - (b.dt.y || 0) || a.dt.mo - b.dt.mo || a.dt.d - b.dt.d;
+  });
+  presolveYears(rows);
+  return {rows:rows, seenAG:seenAG, dropped:dropped};
+}
+
+function runImport(){
+  var raw = state.importText || "";
+  if(!raw.trim()){ state.importNote = "Paste the rows first."; render(); return; }
+  var got = pparse(raw);
+  if(!got.rows.length){
+    state.importNote = got.seenAG
+      ? "Found " + got.seenAG + " ad-group rows but no readable date and spend on any of them."
+      : "No AG1–AG5 rows in that paste. Select the log rows, not the header.";
+    render(); return;
+  }
+  /* Fold the flat rows into whole days, so a partly-logged day still imports. */
+  var incoming = {};
+  got.rows.forEach(function(r){
+    if(AGS.indexOf(r.ag) < 0) return;
+    if(!incoming[r.key]) incoming[r.key] = emptyRows();
+    incoming[r.key][r.ag] = {spend:r.spend, impr:r.impr, clicks:r.clicks,
+                             orders:r.orders, gross:r.gross};
+  });
+  var keys = Object.keys(incoming).sort();
+  if(!keys.length){ state.importNote = "Nothing to import."; render(); return; }
+
+  var clash = state.demo ? [] : keys.filter(function(k){ return !!state.days[k]; });
+  if(clash.length && !confirm(
+      clash.length + " of these " + keys.length + " days " +
+      (clash.length === 1 ? "is" : "are") + " already saved (" +
+      clash.slice(0, 4).map(fmtDay).join(", ") + (clash.length > 4 ? "…" : "") +
+      ").\nImporting replaces them. Continue?")) return;
+
+  if(state.demo){ state.days = {}; state.demo = false; }
+  keys.forEach(function(k){ state.days[k] = incoming[k]; });
+  lsSave();
+
+  state.importOpen = false; state.importText = ""; state.importNote = "";
+  state.date = keys[keys.length - 1];
+  state.draft = JSON.parse(JSON.stringify(state.days[state.date]));
+  state.dirty = false;
+  state.msg = "Imported " + keys.length + " day" + (keys.length === 1 ? "" : "s") +
+    " — " + fmtDay(keys[0]) + " to " + fmtDay(keys[keys.length - 1]) + "." +
+    (got.dropped ? " " + got.dropped + " row" + (got.dropped === 1 ? "" : "s") + " skipped." : "");
+  render();
+
+  if(state.db){
+    var stamp = new Date().toISOString();
+    keys.forEach(function(k){
+      state.db.doc("days/" + k).set({date:k, rows:state.days[k], updatedAt:stamp})
+        .catch(function(err){
+          console.warn("import: " + k + " not saved", err && err.code);
+        });
+    });
+  }
 }
 
 /* ================================================================== *
@@ -918,6 +1073,15 @@ function wire(){
   if(el("save")) el("save").onclick = saveDay;
   if(el("saveset")) el("saveset").onclick = saveSettings;
   if(el("csv")) el("csv").onclick = exportCsv;
+  if(el("imp")) el("imp").onclick = function(){
+    state.importOpen = !state.importOpen; state.importNote = ""; render();
+    if(state.importOpen && el("impText")) el("impText").focus();
+  };
+  if(el("impCancel")) el("impCancel").onclick = function(){
+    state.importOpen = false; state.importText = ""; state.importNote = ""; render();
+  };
+  if(el("impRead")) el("impRead").onclick = runImport;
+  if(el("impText")) el("impText").oninput = function(){ state.importText = this.value; };
 
   document.querySelectorAll(".entry input").forEach(function(inp){
     inp.oninput = function(){
