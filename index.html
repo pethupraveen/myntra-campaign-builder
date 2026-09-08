@@ -367,7 +367,8 @@ textarea.paste:focus-visible{outline:2px solid var(--accent);outline-offset:-1px
   <div class="sechead"><h2>Performance vs plan</h2><p>Every other tab is what was planned. This one is what happened &mdash; read straight out of the Daily Tracker.</p></div>
 
   <div class="pbar">
-    <button class="fbtn pri" id="pPaste">Paste from Daily Tracker</button>
+    <a class="fbtn pri" href="daily/" style="text-decoration:none;display:inline-block">Open the Daily Desk &rarr;</a>
+    <button class="fbtn" id="pPaste">Paste from Daily Tracker</button>
     <label class="fbtn" for="pFile" style="cursor:pointer">Load a CSV</label>
     <input type="file" id="pFile" accept=".csv,.tsv,.txt" hidden>
     <span class="rrbox">Return rate <input class="numin" id="pRR" type="number" min="0" max="80" step="1" value="30">%</span>
@@ -387,7 +388,9 @@ textarea.paste:focus-visible{outline:2px solid var(--accent);outline-offset:-1px
 
   <div class="empty" id="pEmpty">
     <h3>No days logged yet</h3>
-    <p>Paste the Daily Tracker rows above and this tab fills in: actual ROI against each group&rsquo;s target, spend pace, the cumulative curve, and today&rsquo;s ranked action list. Delivery faults read from day one; bid decisions stay hidden until a group has 40 clicks and 10 orders, because a three-day ROI is noise.</p>
+    <p>The <a href="daily/" style="color:var(--accent);font-weight:600">Daily Desk</a> is the quicker way in &mdash;
+      type the five rows straight into a form, and it keeps every day it saves. Or paste the Daily Tracker rows
+      above and this tab fills in: actual ROI against each group&rsquo;s target, spend pace, the cumulative curve, and today&rsquo;s ranked action list. Delivery faults read from day one; bid decisions stay hidden until a group has 40 clicks and 10 orders, because a three-day ROI is noise.</p>
   </div>
 
   <div id="pBody" hidden>

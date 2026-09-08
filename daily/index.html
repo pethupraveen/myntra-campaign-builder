@@ -1,0 +1,1155 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="description" content="Log the five Myntra PLA ad-group rows a day and read back ROI, spend pace and today's bid actions.">
+<title>Myntra PLA Daily Desk</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+:root{
+  color-scheme:light;
+  --paper:#F5F4F8; --surface:#FFFFFF; --surface-2:#EDEBF2; --sunk:#FBFAFD;
+  --ink:#16141F; --ink2:#555063; --ink3:#8B85A0; --line:#E3E0EB; --line-2:#CFCBDC;
+  --accent:#3B2E86; --accent-soft:#EAE7F7; --accent-ink:#3B2E86;
+  --good:#0F8F62; --warn:#C98500; --crit:#C43533;
+  --good-bg:#E4F3EC; --warn-bg:#FBF0DA; --crit-bg:#FBE7E7;
+  --s1:#2a78d6; --s2:#eb6834; --s3:#1baf7a; --s4:#eda100; --s5:#e87ba4;
+  --band:#E6EEFA; --grid:#EDEBF2;
+  --shadow:0 1px 2px rgba(22,20,31,.06), 0 8px 24px -16px rgba(22,20,31,.28);
+  --field:#FFFDF0; --field-line:#D8D2B6;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --paper:#131219; --surface:#1B1A23; --surface-2:#25232F; --sunk:#17161E;
+    --ink:#F4F2F8; --ink2:#B3AEC4; --ink3:#7E7891; --line:#2E2C3A; --line-2:#3D3A4B;
+    --accent:#9085e9; --accent-soft:#262238; --accent-ink:#B7AFF3;
+    --good:#2FB183; --warn:#E0A22B; --crit:#E66767;
+    --good-bg:#16281F; --warn-bg:#2C2213; --crit-bg:#2E1A1A;
+    --s1:#3987e5; --s2:#d95926; --s3:#199e70; --s4:#c98500; --s5:#d55181;
+    --band:#1E2A3C; --grid:#272531;
+    --shadow:0 1px 2px rgba(0,0,0,.5), 0 8px 24px -16px rgba(0,0,0,.9);
+    --field:#221F16; --field-line:#4A422A;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --paper:#131219; --surface:#1B1A23; --surface-2:#25232F; --sunk:#17161E;
+  --ink:#F4F2F8; --ink2:#B3AEC4; --ink3:#7E7891; --line:#2E2C3A; --line-2:#3D3A4B;
+  --accent:#9085e9; --accent-soft:#262238; --accent-ink:#B7AFF3;
+  --good:#2FB183; --warn:#E0A22B; --crit:#E66767;
+  --good-bg:#16281F; --warn-bg:#2C2213; --crit-bg:#2E1A1A;
+  --s1:#3987e5; --s2:#d95926; --s3:#199e70; --s4:#c98500; --s5:#d55181;
+  --band:#1E2A3C; --grid:#272531;
+  --shadow:0 1px 2px rgba(0,0,0,.5), 0 8px 24px -16px rgba(0,0,0,.9);
+  --field:#221F16; --field-line:#4A422A;
+}
+*{box-sizing:border-box}
+body{background:var(--paper);color:var(--ink);
+  font-family:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  font-size:14px;line-height:1.55;-webkit-font-smoothing:antialiased}
+h1,h2,h3{font-family:Archivo,"Helvetica Neue",Arial,sans-serif;margin:0;text-wrap:balance;letter-spacing:-.015em}
+.num,.mono{font-family:"IBM Plex Mono",ui-monospace,Menlo,monospace;font-variant-numeric:tabular-nums}
+.wrap{max-width:1180px;margin:0 auto;padding:0 22px 72px}
+
+/* ---------- header ---------- */
+header{border-bottom:1px solid var(--line);background:var(--surface)}
+.hd{max-width:1180px;margin:0 auto;padding:22px 22px 0;display:flex;gap:28px;
+  align-items:flex-start;justify-content:space-between;flex-wrap:wrap}
+.eyebrow{font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--ink3)}
+h1{font-size:27px;font-weight:700;line-height:1.12;margin-top:4px}
+.sub{color:var(--ink2);font-size:13px;margin-top:6px;max-width:56ch}
+.chips{display:flex;gap:10px;flex-wrap:wrap}
+.chip{background:var(--sunk);border:1px solid var(--line);border-radius:9px;padding:9px 13px;min-width:112px}
+.chip .k{font-family:"IBM Plex Mono",monospace;font-size:10px;letter-spacing:.12em;
+  text-transform:uppercase;color:var(--ink3)}
+.chip .v{font-family:"IBM Plex Mono",monospace;font-size:21px;font-weight:600;
+  letter-spacing:-.03em;line-height:1.25;font-variant-numeric:tabular-nums}
+.chip .n{font-size:11px;color:var(--ink3)}
+nav{max-width:1180px;margin:0 auto;padding:14px 22px 0;display:flex;gap:2px}
+.tab{appearance:none;border:0;background:none;padding:11px 15px;cursor:pointer;
+  font:600 13px Archivo,sans-serif;color:var(--ink3);border-bottom:2px solid transparent}
+.tab:hover{color:var(--ink2)}
+.tab[aria-selected="true"]{color:var(--accent-ink);border-bottom-color:var(--accent)}
+.tab:focus-visible{outline:2px solid var(--accent);outline-offset:-2px;border-radius:4px}
+
+/* ---------- shared ---------- */
+section{margin-top:26px}
+.sechead{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;margin-bottom:11px}
+h2{font-size:13px;font-weight:600;letter-spacing:.09em;text-transform:uppercase;color:var(--ink2)}
+.sechead p{margin:0;color:var(--ink3);font-size:12.5px}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:12px}
+.pad{padding:18px}
+.banner{display:flex;gap:11px;align-items:flex-start;padding:11px 14px;border-radius:10px;
+  font-size:12.5px;margin-top:18px;border:1px solid var(--line-2);background:var(--surface-2);color:var(--ink2)}
+.banner b{color:var(--ink)}
+.banner.warn{background:var(--warn-bg);border-color:var(--warn);color:var(--ink)}
+button.act{appearance:none;font:600 13px Archivo,sans-serif;cursor:pointer;border-radius:9px;
+  padding:9px 16px;border:1px solid var(--accent);background:var(--accent);color:#fff}
+button.act:hover{filter:brightness(1.08)}
+button.act:disabled{opacity:.45;cursor:not-allowed;filter:none}
+button.ghost{background:none;color:var(--accent-ink);border-color:var(--line-2)}
+button.ghost:hover{background:var(--accent-soft);filter:none}
+button.tiny{font:600 11px Archivo,sans-serif;padding:5px 9px;border-radius:7px;
+  border:1px solid var(--line-2);background:none;color:var(--ink2);cursor:pointer}
+button.tiny:hover{border-color:var(--crit);color:var(--crit)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+input[type="date"],input[type="number"],input[type="text"]{
+  font-family:"IBM Plex Mono",monospace;font-size:13px;font-variant-numeric:tabular-nums;
+  background:var(--field);color:var(--ink);border:1px solid var(--field-line);
+  border-radius:7px;padding:7px 9px;width:100%}
+input:focus{outline:2px solid var(--accent);outline-offset:0;border-color:var(--accent)}
+
+/* ---------- tables ---------- */
+.scroll{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:12.5px}
+th{font-family:"IBM Plex Mono",monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--ink3);font-weight:500;text-align:right;padding:0 10px 8px;white-space:nowrap;
+  border-bottom:1px solid var(--line)}
+th.l,td.l{text-align:left}
+td{padding:9px 10px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap;
+  font-variant-numeric:tabular-nums;font-family:"IBM Plex Mono",monospace}
+td.l{font-family:"IBM Plex Sans",sans-serif}
+tbody tr:last-child td{border-bottom:0}
+tr.tot td{font-weight:600;border-top:2px solid var(--line-2);border-bottom:0;background:var(--sunk)}
+.agdot{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:8px;vertical-align:-1px}
+.pill{display:inline-block;font-family:"IBM Plex Mono",monospace;font-size:10.5px;font-weight:600;
+  letter-spacing:.06em;padding:3px 8px;border-radius:20px;white-space:nowrap}
+.pill.ok{background:var(--good-bg);color:var(--good)}
+.pill.hold{background:var(--surface-2);color:var(--ink2)}
+.pill.warn{background:var(--warn-bg);color:var(--warn)}
+.pill.crit{background:var(--crit-bg);color:var(--crit)}
+.muted{color:var(--ink3)}
+
+/* ---------- log grid ---------- */
+.logbar{display:flex;gap:18px;align-items:flex-end;flex-wrap:wrap;
+  padding:16px 18px;border-bottom:1px solid var(--line);background:var(--sunk);border-radius:12px 12px 0 0}
+.fld{display:flex;flex-direction:column;gap:5px}
+.fld label{font-family:"IBM Plex Mono",monospace;font-size:10px;letter-spacing:.11em;
+  text-transform:uppercase;color:var(--ink3)}
+.fld input{width:170px}
+.logbar .spacer{flex:1}
+.saveline{display:flex;align-items:center;gap:12px;font-size:12.5px;color:var(--ink3)}
+.entry{display:grid;grid-template-columns:180px repeat(5,1fr) 1.35fr;gap:0;align-items:stretch}
+.entry .hcell{font-family:"IBM Plex Mono",monospace;font-size:10px;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--ink3);padding:14px 10px 8px;border-bottom:1px solid var(--line);
+  text-align:right}
+.entry .hcell.l{text-align:left;padding-left:18px}
+.entry .hcell.r{padding-right:18px;text-align:left}
+.entry .cell{padding:9px 6px;border-bottom:1px solid var(--line);display:flex;align-items:center}
+.entry .cell.name{padding:9px 10px 9px 18px;flex-direction:column;align-items:flex-start;gap:1px;justify-content:center}
+.entry .cell.read{padding-right:18px;padding-left:12px;flex-direction:column;align-items:flex-start;
+  gap:3px;justify-content:center;background:var(--sunk)}
+.entry .cell.read .rd{font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--ink2);
+  font-variant-numeric:tabular-nums;display:flex;gap:9px;flex-wrap:wrap}
+.entry .cell.read .rd i{font-style:normal;color:var(--ink3)}
+.gname{font:600 13px Archivo,sans-serif;display:flex;align-items:center}
+.gmeta{font-family:"IBM Plex Mono",monospace;font-size:10.5px;color:var(--ink3);padding-left:17px}
+.entryfoot{display:flex;gap:14px;align-items:center;flex-wrap:wrap;padding:16px 18px;background:var(--sunk);
+  border-radius:0 0 12px 12px}
+.dtot{font-family:"IBM Plex Mono",monospace;font-size:12px;color:var(--ink2);display:flex;gap:16px;flex-wrap:wrap}
+.dtot b{color:var(--ink);font-weight:600}
+
+/* ---------- kpi ---------- */
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(168px,1fr));gap:12px}
+.kpi{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:15px 16px}
+.kpi .k{font-family:"IBM Plex Mono",monospace;font-size:10px;letter-spacing:.12em;
+  text-transform:uppercase;color:var(--ink3)}
+.kpi .v{font-family:"IBM Plex Mono",monospace;font-size:29px;font-weight:600;letter-spacing:-.04em;
+  line-height:1.2;margin-top:5px;font-variant-numeric:tabular-nums}
+.kpi .n{font-size:11.5px;color:var(--ink3);margin-top:3px}
+.kpi.lead{background:var(--accent-soft);border-color:transparent;box-shadow:var(--shadow)}
+.kpi.lead .k,.kpi.lead .n{color:var(--accent-ink);opacity:.8}
+.kpi.lead .v{color:var(--accent-ink);font-size:34px}
+.charts{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media (max-width:900px){.charts{grid-template-columns:1fr}
+  .entry{grid-template-columns:1fr}
+  .entry .hcell{display:none}
+  .entry .cell{border-bottom:0;padding:4px 18px}
+  .entry .cell.name{padding-top:14px}
+  .entry .cell.read{border-bottom:1px solid var(--line);padding:9px 18px 14px}
+  .entry .cell::before{content:attr(data-lab);font-family:"IBM Plex Mono",monospace;font-size:10px;
+    letter-spacing:.1em;text-transform:uppercase;color:var(--ink3);width:110px;flex:none}
+  .entry .cell.name::before,.entry .cell.read::before{display:none}}
+figure{margin:0}
+figcaption{font:600 13px Archivo,sans-serif;color:var(--ink)}
+figcaption span{display:block;font:400 12px "IBM Plex Sans",sans-serif;color:var(--ink3);margin-top:2px}
+.legend{display:flex;gap:14px;flex-wrap:wrap;margin-top:10px;font-size:11.5px;color:var(--ink2)}
+.legend i{font-style:normal;display:inline-flex;align-items:center;gap:6px}
+svg{display:block;width:100%;height:auto}
+.tipbox{position:fixed;pointer-events:none;z-index:40;background:var(--surface);border:1px solid var(--line-2);
+  border-radius:8px;box-shadow:var(--shadow);padding:9px 11px;font-size:11.5px;
+  font-family:"IBM Plex Mono",monospace;font-variant-numeric:tabular-nums;color:var(--ink);
+  opacity:0;transition:opacity .1s;max-width:230px}
+.tipbox b{display:block;font-family:Archivo,sans-serif;font-size:12px;margin-bottom:4px}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+
+/* ---------- action ladder ---------- */
+.acts{display:flex;flex-direction:column;gap:0}
+.actrow{display:grid;grid-template-columns:44px 168px 1fr 1fr;gap:16px;padding:14px 18px;
+  border-bottom:1px solid var(--line);align-items:start}
+.actrow:last-child{border-bottom:0}
+.actrow .pri{font-family:"IBM Plex Mono",monospace;font-size:11px;font-weight:600;color:#fff;
+  width:26px;height:26px;border-radius:7px;display:flex;align-items:center;justify-content:center}
+.actrow .who{font:600 13px Archivo,sans-serif}
+.actrow .who span{display:block;font:400 11px "IBM Plex Mono",monospace;color:var(--ink3);margin-top:2px}
+.actrow .reading{color:var(--ink2);font-size:12.5px}
+.actrow .todo{font-size:12.5px;font-weight:600}
+@media (max-width:760px){.actrow{grid-template-columns:34px 1fr}}
+.ladder{font-size:12px;color:var(--ink3);padding:14px 18px;background:var(--sunk);
+  border-radius:0 0 12px 12px;border-top:1px solid var(--line)}
+.ladder b{color:var(--ink2)}
+.rechead{display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap;
+  padding:14px 18px;border-bottom:1px solid var(--line)}
+footer{margin-top:34px;padding-top:18px;border-top:1px solid var(--line);
+  color:var(--ink3);font-size:12px;display:flex;gap:20px;flex-wrap:wrap}
+.set{display:flex;gap:16px;flex-wrap:wrap;align-items:flex-end}
+.set .fld input{width:132px}
+</style>
+
+<style>
+body{margin:0}
+p{margin:0}
+img{max-width:100%}
+[hidden]{display:none!important}
+.back{font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.08em;text-transform:uppercase;
+  color:var(--ink3);text-decoration:none;border-bottom:1px solid var(--line-2);padding-bottom:1px}
+.back:hover{color:var(--accent-ink);border-bottom-color:var(--accent)}
+.hd .eyebrow{margin-top:6px}
+</style>
+</head>
+<body>
+<header>
+  <div class="hd">
+    <div>
+      <div><a class="back" href="../">&larr; Myntra Ad Command</a></div>
+      <div class="eyebrow">Myntra PLA &middot; 152 funded styles &middot; 5 ad groups</div>
+      <h1>Daily Desk</h1>
+      <p class="sub">Log the five ad-group rows once a day. The dashboard, the ROI corridor and
+        today&rsquo;s bid actions all read from what you enter here.</p>
+    </div>
+    <div class="chips" id="chips"></div>
+  </div>
+  <nav role="tablist">
+    <button class="tab" role="tab" id="tab-log" aria-selected="true" data-view="log">Log the day</button>
+    <button class="tab" role="tab" id="tab-perf" aria-selected="false" data-view="perf">Performance</button>
+    <button class="tab" role="tab" id="tab-rec" aria-selected="false" data-view="rec">Records</button>
+  </nav>
+</header>
+
+<div class="wrap">
+  <div id="dbnote"></div>
+  <div id="view"></div>
+  <footer>
+    <span>ASP &#8377;899 &middot; return rate applied to same-day gross &middot; ROI corridor 5.5x&ndash;15.5x</span>
+    <span>Max CPC = ASP &times; CVR &times; (1 &minus; return rate) &divide; target ROI</span>
+  </footer>
+</div>
+<div class="tipbox" id="tip" role="status" aria-live="polite"></div>
+
+<script>
+"use strict";
+/* ------------------------------------------------------------------ *
+ * The plan, as committed in data/ad_group_summary.csv. Shares are held
+ * fixed against the Rs 15,000 baseline so a budget change rescales the
+ * whole ladder the way the Control Panel does.
+ * ------------------------------------------------------------------ */
+var ASP = 899, BASE_BUDGET = 15000;
+var GROUPS = [
+  {ag:"AG1", name:"Hero Scale",           styles:45, monthly:3870.97, cvr:0.045, roas:14.0, color:"--s1"},
+  {ag:"AG2", name:"Rising Stars",         styles:42, monthly:3629.03, cvr:0.036, roas:10.5, color:"--s2"},
+  {ag:"AG3", name:"New Launch Incubator", styles:25, monthly:2500.00, cvr:0.026, roas:6.0,  color:"--s3"},
+  {ag:"AG4", name:"Steady Volume",        styles:30, monthly:2500.00, cvr:0.029, roas:8.0,  color:"--s4"},
+  {ag:"AG5", name:"Ad-Dependent Retest",  styles:10, monthly:2500.00, cvr:0.022, roas:5.5,  color:"--s5"}
+];
+GROUPS.forEach(function(g){ g.share = g.monthly / BASE_BUDGET; });
+var AGS = GROUPS.map(function(g){ return g.ag; });
+var FIELDS = [
+  {k:"spend",  lab:"Spend ₹",   step:"1"},
+  {k:"impr",   lab:"Impressions",    step:"1"},
+  {k:"clicks", lab:"Clicks",         step:"1"},
+  {k:"orders", lab:"Orders",         step:"1"},
+  {k:"gross",  lab:"Gross rev ₹", step:"1"}
+];
+var DEFAULTS = {budget:15000, returnRate:0.30, roiFloor:5.5, roiCeiling:15.5, daysInMonth:30};
+
+var state = {
+  view:"log",
+  settings:Object.assign({}, DEFAULTS),
+  days:{},            /* "YYYY-MM-DD" -> {AG1:{spend,impr,clicks,orders,gross}, ...} */
+  demo:true,          /* true while showing sample rows instead of real ones */
+  date:todayISO(),
+  draft:null,         /* the row being edited on the log tab */
+  dirty:false,
+  saving:false,
+  msg:"",
+  db:null, dbTried:false, downloads:null
+};
+
+/* ---------------- helpers ---------------- */
+function todayISO(){
+  var d = new Date();
+  return new Date(d.getTime() - d.getTimezoneOffset()*60000).toISOString().slice(0,10);
+}
+function shiftISO(iso, n){
+  var d = new Date(iso + "T00:00:00");
+  d.setDate(d.getDate() + n);
+  return new Date(d.getTime() - d.getTimezoneOffset()*60000).toISOString().slice(0,10);
+}
+function fmtDay(iso){
+  var d = new Date(iso + "T00:00:00");
+  return d.toLocaleDateString("en-IN", {day:"2-digit", month:"short"});
+}
+function fmtFull(iso){
+  var d = new Date(iso + "T00:00:00");
+  return d.toLocaleDateString("en-IN", {weekday:"short", day:"2-digit", month:"short", year:"numeric"});
+}
+function rupee(v, dp){
+  if(v === null || v === undefined || !isFinite(v)) return "—";
+  return "₹" + Number(v).toLocaleString("en-IN", {minimumFractionDigits:dp||0, maximumFractionDigits:dp||0});
+}
+function n0(v){ return (v===null||v===undefined||!isFinite(v)) ? "—" : Math.round(v).toLocaleString("en-IN"); }
+function pct(v, dp){ return (v===null||!isFinite(v)) ? "—" : (v*100).toFixed(dp===undefined?1:dp) + "%"; }
+function roiTxt(v){ return (v===null||!isFinite(v)) ? "—" : v.toFixed(2) + "x"; }
+function esc(s){ return String(s).replace(/[&<>"]/g, function(c){
+  return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c]; }); }
+function el(id){ return document.getElementById(id); }
+function num(v){ var x = parseFloat(v); return isFinite(x) ? x : null; }
+function emptyRows(){
+  var o = {};
+  GROUPS.forEach(function(g){ o[g.ag] = {spend:null, impr:null, clicks:null, orders:null, gross:null}; });
+  return o;
+}
+function hasAny(rows){
+  return AGS.some(function(a){
+    var r = rows[a] || {};
+    return FIELDS.some(function(f){ return r[f.k] !== null && r[f.k] !== undefined && r[f.k] !== ""; });
+  });
+}
+function sortedDates(){ return Object.keys(state.days).sort(); }
+
+/* ---------------- the plan, at current settings ---------------- */
+function planFor(g){
+  var s = state.settings;
+  var monthly = s.budget * g.share;
+  var daily = monthly / s.daysInMonth;
+  var maxCPC = g.roas > 0 ? (ASP * g.cvr * (1 - s.returnRate)) / g.roas : 0;
+  return {monthly:monthly, daily:daily, maxCPC:maxCPC};
+}
+/* One logged group-day, with everything the workbook derives from it. */
+function derive(g, r){
+  var p = planFor(g);
+  var spend = num(r && r.spend), impr = num(r && r.impr), clicks = num(r && r.clicks),
+      orders = num(r && r.orders), gross = num(r && r.gross);
+  var net = gross === null ? null : gross * (1 - state.settings.returnRate);
+  return {
+    ag:g.ag, logged:spend !== null, spend:spend, impr:impr, clicks:clicks, orders:orders,
+    gross:gross, net:net, target:p.daily, maxCPC:p.maxCPC,
+    pace:  spend !== null && p.daily > 0 ? spend / p.daily : null,
+    ctr:   impr ? clicks / impr : null,
+    cpc:   clicks ? spend / clicks : null,
+    cvr:   clicks ? orders / clicks : null,
+    roi:   spend ? net / spend : null
+  };
+}
+/* Cumulative totals for one group up to and including `upto`. */
+function cumFor(ag, upto){
+  var t = {spend:0, impr:0, clicks:0, orders:0, gross:0, net:0, days:0};
+  var rr = state.settings.returnRate;
+  sortedDates().forEach(function(d){
+    if(upto && d > upto) return;
+    var r = state.days[d][ag]; if(!r || num(r.spend) === null) return;
+    t.days++;
+    t.spend += num(r.spend) || 0; t.impr += num(r.impr) || 0; t.clicks += num(r.clicks) || 0;
+    t.orders += num(r.orders) || 0; t.gross += num(r.gross) || 0;
+  });
+  t.net = t.gross * (1 - rr);
+  t.cpc = t.clicks ? t.spend / t.clicks : null;
+  t.cvr = t.clicks ? t.orders / t.clicks : null;
+  t.ctr = t.impr ? t.clicks / t.impr : null;
+  t.roi = t.spend ? t.net / t.spend : null;
+  return t;
+}
+function portfolio(upto){
+  var t = {spend:0, impr:0, clicks:0, orders:0, gross:0, net:0};
+  AGS.forEach(function(a){
+    var c = cumFor(a, upto);
+    t.spend += c.spend; t.impr += c.impr; t.clicks += c.clicks;
+    t.orders += c.orders; t.gross += c.gross;
+  });
+  t.net = t.gross * (1 - state.settings.returnRate);
+  t.cpc = t.clicks ? t.spend / t.clicks : null;
+  t.cvr = t.clicks ? t.orders / t.clicks : null;
+  t.ctr = t.impr ? t.clicks / t.impr : null;
+  t.roi = t.spend ? t.net / t.spend : null;
+  t.cpo = t.orders ? t.spend / t.orders : null;
+  return t;
+}
+
+/* ---------------- the priority ladder (same order as the workbook) ---------------- */
+var LADDER = [
+  {p:1, tag:"NO DELIVERY", cls:"crit"},
+  {p:2, tag:"UNDERSPEND",  cls:"crit"},
+  {p:3, tag:"OVERSPEND",   cls:"warn"},
+  {p:4, tag:"BID-CAPPED",  cls:"warn"},
+  {p:5, tag:"BELOW FLOOR", cls:"warn"},
+  {p:6, tag:"ABOVE CEIL",  cls:"ok"},
+  {p:7, tag:"HOLD",        cls:"hold"}
+];
+function priority(d, cum){
+  if(!d.logged) return null;
+  if(d.impr === 0) return 1;
+  if(d.pace !== null && d.pace < 0.60) return 2;
+  if(d.pace !== null && d.pace > 1.15) return 3;
+  if(d.cpc !== null && d.cpc >= d.maxCPC * 0.98) return 4;
+  if(cum.clicks < 40 || cum.orders < 10) return 7;
+  if(cum.roi !== null && cum.roi < state.settings.roiFloor) return 5;
+  if(cum.roi !== null && cum.roi > state.settings.roiCeiling) return 6;
+  return 7;
+}
+function reading(p, d, cum){
+  var s = state.settings;
+  switch(p){
+    case 1: return "Zero impressions — the bid is under the category auction floor, or core sizes are out of stock.";
+    case 2: return "Spend at " + pct(d.pace, 0) + " of target — bids are not clearing auctions.";
+    case 3: return "Spend at " + pct(d.pace, 0) + " of target — the daily cap is set wrong in Partner Portal.";
+    case 4: return "Actual CPC " + rupee(d.cpc, 2) + " is pinned at the " + rupee(d.maxCPC, 2) +
+                   " cap — bid-constrained, not budget-constrained.";
+    case 5: return "Cumulative ROI " + roiTxt(cum.roi) + " is below the " + s.roiFloor.toFixed(1) +
+                   "x floor on " + n0(cum.clicks) + " clicks / " + n0(cum.orders) + " orders.";
+    case 6: return "Cumulative ROI " + roiTxt(cum.roi) + " is above the " + s.roiCeiling.toFixed(1) +
+                   "x ceiling on " + n0(cum.clicks) + " clicks / " + n0(cum.orders) + " orders.";
+    default:
+      if(cum.clicks < 40 || cum.orders < 10)
+        return "Delivering normally. " + n0(cum.clicks) + " clicks / " + n0(cum.orders) +
+               " orders — too thin to judge ROI yet.";
+      return "Delivering normally, cumulative ROI " + roiTxt(cum.roi) + " sits inside the corridor.";
+  }
+}
+function action(p, d, cum){
+  switch(p){
+    case 1: return "Check core-size stock first. If it is in stock, raise the bid to the group ceiling today.";
+    case 2: return "Raise the bid toward the " + rupee(d.maxCPC, 2) + " cap today. Underspend is the live problem, not ROI.";
+    case 3: return "Correct this group’s daily cap in Partner Portal today.";
+    case 4: return "Nothing today. This group cannot scale until the bid is recut from a measured CVR.";
+    case 5: return "Cut the bid 20% and recheck in 7 days.";
+    case 6: return "Raise the bid 15% and move budget into this group — you are under-buying it.";
+    default:
+      if(cum.clicks < 40 || cum.orders < 10)
+        return "Collecting — needs 40 clicks and 10 orders before the bid can move. Hold.";
+      return "On plan — hold. Do not touch the bid for 2 weeks.";
+  }
+}
+function priColor(p){ return p <= 2 ? "var(--crit)" : p <= 4 ? "var(--warn)" : p === 5 ? "var(--warn)" :
+                             p === 6 ? "var(--s1)" : "var(--ink3)"; }
+
+/* ---------------- sample data (shown only until a real day is logged) ---------------- */
+function sampleDays(){
+  var out = {}, start = shiftISO(todayISO(), -5);
+  /* Deterministic, plausible: AG2 underspends, AG5 sits at its bid cap. */
+  var profile = {
+    AG1:{pace:0.97, ctr:0.0090, cpcF:0.93, cvr:0.043, aov:899},
+    AG2:{pace:0.55, ctr:0.0071, cpcF:0.88, cvr:0.034, aov:899},
+    AG3:{pace:0.92, ctr:0.0064, cpcF:0.90, cvr:0.021, aov:899},
+    AG4:{pace:1.03, ctr:0.0078, cpcF:0.95, cvr:0.030, aov:899},
+    AG5:{pace:0.99, ctr:0.0052, cpcF:1.02, cvr:0.019, aov:899}
+  };
+  for(var i = 0; i < 6; i++){
+    var iso = shiftISO(start, i), rows = {};
+    GROUPS.forEach(function(g, gi){
+      var pr = profile[g.ag], p = planFor(g);
+      var wob = 1 + 0.10 * Math.sin((i + gi) * 1.7);
+      var spend = Math.round(p.daily * pr.pace * wob);
+      var cpc = p.maxCPC * pr.cpcF;
+      var clicks = Math.max(1, Math.round(spend / cpc));
+      var impr = Math.round(clicks / pr.ctr);
+      var orders = Math.round(clicks * pr.cvr * wob);
+      rows[g.ag] = {spend:spend, impr:impr, clicks:clicks, orders:orders,
+                    gross:Math.round(orders * pr.aov)};
+    });
+    out[iso] = rows;
+  }
+  return out;
+}
+
+/* ================================================================== *
+ *  RENDER
+ * ================================================================== */
+function render(){
+  renderChips();
+  renderDbNote();
+  document.querySelectorAll(".tab").forEach(function(t){
+    t.setAttribute("aria-selected", t.dataset.view === state.view ? "true" : "false");
+  });
+  var v = el("view");
+  if(state.view === "log")  v.innerHTML = viewLog();
+  if(state.view === "perf") v.innerHTML = viewPerf();
+  if(state.view === "rec")  v.innerHTML = viewRec();
+  wire();
+}
+
+function renderChips(){
+  var s = state.settings, t = portfolio(null), dates = sortedDates();
+  var spentPct = s.budget ? t.spend / s.budget : 0;
+  var elapsed = dates.length;
+  var expected = s.budget * (elapsed / s.daysInMonth);
+  var roi = t.roi;
+  var roiCls = roi === null ? "" : (roi < s.roiFloor ? "crit" : roi > s.roiCeiling ? "s1" : "good");
+  el("chips").innerHTML =
+    chip("Spend to date", rupee(t.spend), n0(elapsed) + " of " + n0(s.daysInMonth) + " days · " +
+         pct(spentPct, 0) + " of budget") +
+    chip("Blended ROI", roiTxt(roi),
+         roi === null ? "no spend logged" :
+         (roi < s.roiFloor ? "below the " + s.roiFloor + "x floor" :
+          roi > s.roiCeiling ? "above the " + s.roiCeiling + "x ceiling" : "inside the corridor"),
+         roiCls) +
+    chip("Orders", n0(t.orders), t.cpo ? rupee(t.cpo, 0) + " per order" : "—");
+  function chip(k, v, n, cls){
+    var col = cls === "crit" ? "var(--crit)" : cls === "good" ? "var(--good)" :
+              cls === "s1" ? "var(--s1)" : "var(--ink)";
+    return '<div class="chip"><div class="k">' + esc(k) + '</div>' +
+           '<div class="v" style="color:' + col + '">' + v + '</div>' +
+           '<div class="n">' + esc(n) + '</div></div>';
+  }
+}
+
+function renderDbNote(){
+  var h = "";
+  if(state.demo && !state.saving){
+    h = '<div class="banner"><b>Sample figures.</b> Nothing has been logged yet, so the dashboard is ' +
+        'running on six example days so you can see what it does. Save your first day and they disappear.</div>';
+  }
+  if(state.dbTried && !state.db){
+    h += LS_OK
+      ? '<div class="banner"><b>Saved on this device.</b> This copy has no shared database, so records are ' +
+        'kept in this browser. Export the CSV to move them anywhere else.</div>'
+      : '<div class="banner warn"><b>Not saving.</b> This browser is blocking site storage, so anything you ' +
+        'enter stays on screen until you reload. Export the CSV before leaving the page.</div>';
+  }
+  el("dbnote").innerHTML = h;
+}
+
+/* ---------------- view: log ---------------- */
+function viewLog(){
+  var d = state.draft || emptyRows();
+  var existing = !!state.days[state.date] && !state.demo;
+  var tot = {spend:0, clicks:0, orders:0, gross:0, target:0};
+
+  var head = '<div class="hcell l">Ad group</div>' +
+    FIELDS.map(function(f){ return '<div class="hcell">' + esc(f.lab) + '</div>'; }).join("") +
+    '<div class="hcell r">Reads back as</div>';
+
+  var rows = GROUPS.map(function(g){
+    var r = d[g.ag] || {}, dv = derive(g, r), p = planFor(g);
+    tot.spend += dv.spend || 0; tot.clicks += dv.clicks || 0; tot.orders += dv.orders || 0;
+    tot.gross += dv.gross || 0; tot.target += p.daily;
+    var cum = cumFor(g.ag, shiftISO(state.date, -1));
+    var pri = priority(dv, cum);
+    var lad = pri ? LADDER[pri - 1] : null;
+
+    var inputs = FIELDS.map(function(f){
+      var val = (r[f.k] === null || r[f.k] === undefined) ? "" : r[f.k];
+      return '<div class="cell" data-lab="' + esc(f.lab) + '">' +
+        '<input type="number" min="0" step="' + f.step + '" inputmode="decimal" ' +
+        'data-ag="' + g.ag + '" data-k="' + f.k + '" value="' + esc(val) + '" ' +
+        'aria-label="' + esc(g.ag + " " + f.lab) + '"></div>';
+    }).join("");
+
+    var read = dv.logged
+      ? '<div class="rd"><span><i>pace</i> ' + pct(dv.pace, 0) + '</span>' +
+        '<span><i>CPC</i> ' + (dv.cpc === null ? "—" : rupee(dv.cpc, 2)) + '</span>' +
+        '<span><i>CTR</i> ' + (dv.ctr === null ? "—" : pct(dv.ctr, 2)) + '</span></div>' +
+        '<div class="rd"><span><i>CVR</i> ' + (dv.cvr === null ? "—" : pct(dv.cvr, 2)) + '</span>' +
+        '<span><i>ROI</i> ' + roiTxt(dv.roi) + '</span>' +
+        (lad ? ' <span class="pill ' + lad.cls + '">' + lad.tag + '</span>' : "") + '</div>'
+      : '<div class="rd muted">Enter spend to see pace, CPC and ROI.</div>';
+
+    return '<div class="cell name">' +
+        '<span class="gname"><span class="agdot" style="background:var(' + g.color + ')"></span>' +
+        esc(g.ag + " · " + g.name) + '</span>' +
+        '<span class="gmeta">target ' + rupee(p.daily, 0) + '/day · cap ' + rupee(p.maxCPC, 2) +
+        ' · ' + g.styles + ' styles</span></div>' +
+      inputs +
+      '<div class="cell read">' + read + '</div>';
+  }).join("");
+
+  var savedNote = existing
+    ? '<span>Editing a day already saved — saving again overwrites it.</span>'
+    : '<span>Not saved yet.</span>';
+
+  return '<section><div class="sechead"><h2>Log the day</h2>' +
+    '<p>Five rows, about two minutes. Everything on the right is computed as you type.</p></div>' +
+    '<div class="panel">' +
+      '<div class="logbar">' +
+        '<div class="fld"><label for="dt">Date</label>' +
+          '<input type="date" id="dt" value="' + state.date + '" max="' + todayISO() + '"></div>' +
+        '<div class="fld"><label>&nbsp;</label>' +
+          '<button class="act ghost" id="prevday">&larr; Previous day</button></div>' +
+        '<div class="spacer"></div>' +
+        '<div class="saveline">' + savedNote + '</div>' +
+      '</div>' +
+      '<div class="entry">' + head + rows + '</div>' +
+      '<div class="entryfoot">' +
+        '<button class="act" id="save"' + (state.dirty ? "" : " disabled") + '>' +
+          (state.saving ? "Saving…" : existing ? "Update " + fmtDay(state.date) : "Save " + fmtDay(state.date)) +
+        '</button>' +
+        '<button class="act ghost" id="clear">Clear the form</button>' +
+        '<div class="dtot"><span>Day total <b>' + rupee(tot.spend) + '</b> of ' + rupee(tot.target) + '</span>' +
+        '<span>Clicks <b>' + n0(tot.clicks) + '</b></span>' +
+        '<span>Orders <b>' + n0(tot.orders) + '</b></span>' +
+        '<span>Net rev <b>' + rupee(tot.gross * (1 - state.settings.returnRate)) + '</b></span>' +
+        '<span>Day ROI <b>' + roiTxt(tot.spend ? (tot.gross * (1 - state.settings.returnRate)) / tot.spend : null) +
+        '</b></span></div>' +
+        (state.msg ? '<div class="saveline" style="color:var(--good)">' + esc(state.msg) + '</div>' : "") +
+      '</div>' +
+    '</div></section>' + settingsPanel();
+}
+
+function settingsPanel(){
+  var s = state.settings;
+  return '<section><div class="sechead"><h2>Assumptions</h2>' +
+    '<p>The same blue cells as the workbook Control Panel. Changing one rescales every target and bid cap.</p></div>' +
+    '<div class="panel pad set">' +
+      f("budget", "Monthly budget ₹", s.budget, "100") +
+      f("returnRate", "Return rate %", (s.returnRate * 100).toFixed(0), "1") +
+      f("roiFloor", "ROI floor", s.roiFloor, "0.1") +
+      f("roiCeiling", "ROI ceiling", s.roiCeiling, "0.1") +
+      f("daysInMonth", "Days in month", s.daysInMonth, "1") +
+      '<button class="act ghost" id="saveset">Save assumptions</button>' +
+    '</div></section>';
+  function f(k, lab, v, step){
+    return '<div class="fld"><label for="set-' + k + '">' + lab + '</label>' +
+      '<input type="number" id="set-' + k + '" data-set="' + k + '" step="' + step + '" value="' + v + '"></div>';
+  }
+}
+
+/* ---------------- view: performance ---------------- */
+function viewPerf(){
+  var dates = sortedDates();
+  if(!dates.length){
+    return '<section><div class="panel pad"><p class="muted">No days logged yet. ' +
+           'Enter one on the <b>Log the day</b> tab and this fills in.</p></div></section>';
+  }
+  var s = state.settings, last = dates[dates.length - 1], t = portfolio(null);
+  var dailyTarget = s.budget / s.daysInMonth;
+  var runRate = t.spend / dates.length;
+  var monthProj = runRate * s.daysInMonth;
+
+  var kpis = '<div class="kpis">' +
+    kpi("Blended ROI", roiTxt(t.roi),
+        t.roi === null ? "" : t.roi < s.roiFloor ? "under the " + s.roiFloor + "x floor" :
+        t.roi > s.roiCeiling ? "over the " + s.roiCeiling + "x ceiling" : "inside 5.5x–15.5x", true) +
+    kpi("Spend", rupee(t.spend), rupee(runRate, 0) + "/day vs " + rupee(dailyTarget, 0) + " target") +
+    kpi("Projected month", rupee(monthProj), "at this run rate, on " + rupee(s.budget) + " budget") +
+    kpi("Orders", n0(t.orders), t.cpo ? rupee(t.cpo, 0) + " per order" : "") +
+    kpi("Avg CPC", t.cpc ? rupee(t.cpc, 2) : "—", "CTR " + (t.ctr === null ? "—" : pct(t.ctr, 2))) +
+    kpi("CVR", t.cvr === null ? "—" : pct(t.cvr, 2), n0(t.clicks) + " clicks logged") +
+    '</div>';
+
+  return '<section>' + kpis + '</section>' +
+    '<section><div class="charts">' +
+      '<figure class="panel pad">' +
+        '<figcaption>Spend against the daily target' +
+        '<span>Bars are the day’s total spend across the five groups; the dashed line is ' +
+        rupee(dailyTarget, 0) + ', the budget divided by ' + s.daysInMonth + ' days.</span></figcaption>' +
+        chartSpend(dates, dailyTarget) + '</figure>' +
+      '<figure class="panel pad">' +
+        '<figcaption>Cumulative ROI against the corridor' +
+        '<span>Net revenue ÷ spend, running from the first logged day. The band is the ' +
+        s.roiFloor + 'x–' + s.roiCeiling + 'x target corridor.</span></figcaption>' +
+        chartRoi(dates) + '</figure>' +
+    '</div></section>' +
+    '<section><div class="sechead"><h2>Where the money went</h2>' +
+      '<p>Every logged day, by ad group. ROI is measured against each group’s own target, not the blend.</p></div>' +
+      '<div class="panel"><div class="scroll">' + tableGroups() + '</div></div></section>' +
+    '<section><div class="sechead"><h2>Do this today</h2>' +
+      '<p>Read from ' + esc(fmtFull(last)) + ', ranked by urgency. Delivery faults always outrank bid decisions.</p></div>' +
+      '<div class="panel">' + actionPlan(last) + '</div></section>';
+
+  function kpi(k, v, n, lead){
+    return '<div class="kpi' + (lead ? " lead" : "") + '"><div class="k">' + esc(k) + '</div>' +
+      '<div class="v">' + v + '</div><div class="n">' + esc(n || "") + '</div></div>';
+  }
+}
+
+function tableGroups(){
+  var s = state.settings, rows = "", tot = portfolio(null);
+  GROUPS.forEach(function(g){
+    var c = cumFor(g.ag, null), p = planFor(g);
+    var st = c.spend === 0 ? {cls:"hold", tag:"NO SPEND"}
+           : (c.clicks < 40 || c.orders < 10) ? {cls:"hold", tag:"COLLECTING"}
+           : c.roi < s.roiFloor ? {cls:"crit", tag:"BELOW FLOOR"}
+           : c.roi > s.roiCeiling ? {cls:"ok", tag:"ABOVE CEIL"}
+           : c.roi < g.roas ? {cls:"warn", tag:"UNDER TARGET"} : {cls:"ok", tag:"ON TARGET"};
+    rows += "<tr>" +
+      '<td class="l"><span class="agdot" style="background:var(' + g.color + ')"></span>' +
+        esc(g.ag) + " · " + esc(g.name) + "</td>" +
+      "<td>" + rupee(c.spend) + "</td>" +
+      "<td>" + rupee(p.daily * c.days, 0) + "</td>" +
+      "<td>" + (c.days && p.daily ? pct(c.spend / (p.daily * c.days), 0) : "—") + "</td>" +
+      "<td>" + n0(c.clicks) + "</td>" +
+      "<td>" + (c.cpc ? rupee(c.cpc, 2) : "—") + "</td>" +
+      "<td>" + rupee(p.maxCPC, 2) + "</td>" +
+      "<td>" + n0(c.orders) + "</td>" +
+      "<td>" + (c.cvr === null ? "—" : pct(c.cvr, 2)) + "</td>" +
+      "<td>" + rupee(c.net) + "</td>" +
+      "<td>" + roiTxt(c.roi) + "</td>" +
+      "<td>" + g.roas.toFixed(1) + "x</td>" +
+      '<td><span class="pill ' + st.cls + '">' + st.tag + "</span></td></tr>";
+  });
+  var days = sortedDates().length;
+  rows += '<tr class="tot"><td class="l">Portfolio</td>' +
+    "<td>" + rupee(tot.spend) + "</td><td>" + rupee(s.budget / s.daysInMonth * days, 0) + "</td>" +
+    "<td>" + (days ? pct(tot.spend / (s.budget / s.daysInMonth * days), 0) : "—") + "</td>" +
+    "<td>" + n0(tot.clicks) + "</td><td>" + (tot.cpc ? rupee(tot.cpc, 2) : "—") + "</td><td>—</td>" +
+    "<td>" + n0(tot.orders) + "</td><td>" + (tot.cvr === null ? "—" : pct(tot.cvr, 2)) + "</td>" +
+    "<td>" + rupee(tot.net) + "</td><td>" + roiTxt(tot.roi) + "</td><td>9.4x</td><td></td></tr>";
+
+  return "<table><thead><tr>" +
+    '<th class="l">Ad group</th><th>Spend</th><th>Target</th><th>Pace</th><th>Clicks</th>' +
+    "<th>CPC</th><th>Cap</th><th>Orders</th><th>CVR</th><th>Net rev</th><th>ROI</th>" +
+    "<th>Target</th><th>Status</th></tr></thead><tbody>" + rows + "</tbody></table>";
+}
+
+function actionPlan(date){
+  var rows = state.days[date] || {};
+  var items = GROUPS.map(function(g){
+    var dv = derive(g, rows[g.ag]);
+    var cum = cumFor(g.ag, date);
+    var p = priority(dv, cum);
+    return {g:g, dv:dv, cum:cum, p:p};
+  }).filter(function(x){ return x.p !== null; });
+  items.sort(function(a, b){ return a.p - b.p; });
+
+  if(!items.length){
+    return '<div class="pad muted">Nothing logged for ' + esc(fmtDay(date)) + " yet.</div>";
+  }
+  var faults = items.filter(function(i){ return i.p < 5; }).length;
+  var bids = items.filter(function(i){ return i.p === 5 || i.p === 6; }).length;
+
+  var head = '<div class="rechead"><div><b>' + items.length + ' of 5 groups logged</b> · ' +
+    faults + " delivery fault" + (faults === 1 ? "" : "s") + " to fix today · " +
+    bids + " bid change" + (bids === 1 ? "" : "s") + " due</div></div>";
+
+  var body = items.map(function(i){
+    var lad = LADDER[i.p - 1];
+    return '<div class="actrow">' +
+      '<div class="pri" style="background:' + priColor(i.p) + '">' + i.p + "</div>" +
+      '<div class="who">' + esc(i.g.ag + " · " + i.g.name) +
+        "<span>" + lad.tag + "</span></div>" +
+      '<div class="reading">' + esc(reading(i.p, i.dv, i.cum)) + "</div>" +
+      '<div class="todo">' + esc(action(i.p, i.dv, i.cum)) + "</div></div>";
+  }).join("");
+
+  var ladder = '<div class="ladder"><b>1 no delivery &middot; 2 underspending &middot; 3 overspend &middot; ' +
+    '4 bid-capped</b> are mechanical faults — same-day facts, fix them the day you see them. ' +
+    '<b>5 below floor &middot; 6 above ceiling</b> are bid decisions, gated behind 40 cumulative clicks and ' +
+    '10 orders so no bid moves on a three-day sample. <b>7 hold</b> — change nothing.</div>';
+
+  return head + '<div class="acts">' + body + "</div>" + ladder;
+}
+
+/* ---------------- view: records ---------------- */
+function viewRec(){
+  var dates = sortedDates().slice().reverse();
+  if(!dates.length){
+    return '<section><div class="panel pad"><p class="muted">No records yet.</p></div></section>';
+  }
+  var rr = state.settings.returnRate;
+  var rows = dates.map(function(d){
+    var t = {spend:0, impr:0, clicks:0, orders:0, gross:0}, n = 0;
+    AGS.forEach(function(a){
+      var r = state.days[d][a]; if(!r || num(r.spend) === null) return;
+      n++;
+      t.spend += num(r.spend) || 0; t.impr += num(r.impr) || 0; t.clicks += num(r.clicks) || 0;
+      t.orders += num(r.orders) || 0; t.gross += num(r.gross) || 0;
+    });
+    var net = t.gross * (1 - rr);
+    return "<tr>" +
+      '<td class="l"><b>' + esc(fmtDay(d)) + "</b> <span class=\"muted\">" + esc(d) + "</span></td>" +
+      "<td>" + n + "/5</td><td>" + rupee(t.spend) + "</td><td>" + n0(t.impr) + "</td>" +
+      "<td>" + n0(t.clicks) + "</td><td>" + n0(t.orders) + "</td><td>" + rupee(t.gross) + "</td>" +
+      "<td>" + rupee(net) + "</td><td>" + roiTxt(t.spend ? net / t.spend : null) + "</td>" +
+      '<td><button class="tiny" data-edit="' + d + '">Edit</button> ' +
+      '<button class="tiny" data-del="' + d + '">Delete</button></td></tr>';
+  }).join("");
+
+  return '<section><div class="sechead"><h2>Records</h2>' +
+    "<p>" + dates.length + " day" + (dates.length === 1 ? "" : "s") +
+    " saved" + (state.demo ? " (sample)" : " in the database") +
+    ", newest first. Every row is one document keyed by its date.</p></div>" +
+    '<div class="panel"><div class="rechead">' +
+      "<div class=\"muted\">Export writes one row per group per day — the same columns as the " +
+      "Daily Tracker tab.</div>" +
+      '<button class="act ghost" id="csv">Export CSV</button></div>' +
+      '<div class="scroll"><table><thead><tr><th class="l">Date</th><th>Groups</th><th>Spend</th>' +
+      "<th>Impr</th><th>Clicks</th><th>Orders</th><th>Gross</th><th>Net</th><th>ROI</th>" +
+      '<th class="l">&nbsp;</th></tr></thead><tbody>' + rows + "</tbody></table></div></div></section>";
+}
+
+/* ================================================================== *
+ *  CHARTS  (one scale each, no dual axes)
+ * ================================================================== */
+var W = 660, H = 250, M = {t:16, r:18, b:34, l:52};
+function iw(){ return W - M.l - M.r; }
+function ih(){ return H - M.t - M.b; }
+function niceMax(v){
+  if(v <= 0) return 1;
+  var mag = Math.pow(10, Math.floor(Math.log10(v))), f = v / mag;
+  var step = f <= 1.2 ? 1.2 : f <= 2 ? 2 : f <= 3 ? 3 : f <= 5 ? 5 : f <= 8 ? 8 : 10;
+  return step * mag;
+}
+function svgOpen(){
+  return '<svg viewBox="0 0 ' + W + " " + H + '" role="img" preserveAspectRatio="xMidYMid meet">';
+}
+function yAxis(max, fmt){
+  var out = "", n = 4;
+  for(var i = 0; i <= n; i++){
+    var val = max * i / n, y = M.t + ih() - (ih() * i / n);
+    out += '<line x1="' + M.l + '" x2="' + (W - M.r) + '" y1="' + y + '" y2="' + y +
+           '" stroke="var(--grid)" stroke-width="1"/>' +
+           '<text x="' + (M.l - 8) + '" y="' + (y + 3.5) + '" text-anchor="end" fill="var(--ink3)" ' +
+           'font-size="10" font-family="IBM Plex Mono, monospace">' + fmt(val) + "</text>";
+  }
+  return out;
+}
+function xLabels(dates){
+  var out = "", step = Math.max(1, Math.ceil(dates.length / 8)), bw = iw() / dates.length;
+  dates.forEach(function(d, i){
+    if(i % step && i !== dates.length - 1) return;
+    var x = M.l + bw * (i + 0.5);
+    out += '<text x="' + x.toFixed(1) + '" y="' + (H - 12) + '" text-anchor="middle" fill="var(--ink3)" ' +
+           'font-size="10" font-family="IBM Plex Mono, monospace">' + esc(fmtDay(d)) + "</text>";
+  });
+  return out;
+}
+function chartSpend(dates, target){
+  var rr = state.settings.returnRate;
+  var vals = dates.map(function(d){
+    var t = 0;
+    AGS.forEach(function(a){ var r = state.days[d][a]; if(r) t += num(r.spend) || 0; });
+    return t;
+  });
+  var max = niceMax(Math.max(target * 1.25, Math.max.apply(null, vals) * 1.1));
+  var bw = iw() / dates.length, pad = Math.min(9, bw * 0.22);
+  var body = yAxis(max, function(v){ return "₹" + Math.round(v); });
+  dates.forEach(function(d, i){
+    var v = vals[i], h = Math.max(v > 0 ? 2 : 0, ih() * v / max);
+    var x = M.l + bw * i + pad / 2, y = M.t + ih() - h, w = Math.max(2, bw - pad);
+    var col = v < target * 0.6 ? "var(--crit)" : v > target * 1.15 ? "var(--warn)" : "var(--s1)";
+    body += '<rect x="' + x.toFixed(1) + '" y="' + y.toFixed(1) + '" width="' + w.toFixed(1) +
+      '" height="' + h.toFixed(1) + '" rx="4" fill="' + col + '" class="hv" ' +
+      'data-tip="' + esc(fmtFull(d) + "|Spend " + rupee(v) + " · " + pct(v / target, 0) +
+      " of the " + rupee(target) + " target") + '"><title>' + esc(fmtDay(d) + ": " + rupee(v)) +
+      "</title></rect>";
+  });
+  var ty = M.t + ih() - ih() * target / max;
+  body += '<line x1="' + M.l + '" x2="' + (W - M.r) + '" y1="' + ty.toFixed(1) + '" y2="' + ty.toFixed(1) +
+    '" stroke="var(--ink2)" stroke-width="2" stroke-dasharray="5 4"/>' +
+    '<text x="' + (W - M.r) + '" y="' + (ty - 7).toFixed(1) + '" text-anchor="end" fill="var(--ink2)" ' +
+    'font-size="10" font-family="IBM Plex Mono, monospace">target ' + rupee(target) + "</text>";
+  body += xLabels(dates);
+  return svgOpen() + body + "</svg>" +
+    '<div class="legend"><i><span class="agdot" style="background:var(--s1)"></span>on pace</i>' +
+    '<i><span class="agdot" style="background:var(--crit)"></span>under 60% of target</i>' +
+    '<i><span class="agdot" style="background:var(--warn)"></span>over 115%</i></div>';
+}
+function chartRoi(dates){
+  var s = state.settings, pts = [], run = {spend:0, gross:0};
+  dates.forEach(function(d){
+    AGS.forEach(function(a){
+      var r = state.days[d][a]; if(!r || num(r.spend) === null) return;
+      run.spend += num(r.spend) || 0; run.gross += num(r.gross) || 0;
+    });
+    pts.push(run.spend ? (run.gross * (1 - s.returnRate)) / run.spend : 0);
+  });
+  var max = niceMax(Math.max(s.roiCeiling * 1.12, Math.max.apply(null, pts) * 1.15));
+  var body = "";
+  var yb = M.t + ih() - ih() * s.roiCeiling / max, yt = M.t + ih() - ih() * s.roiFloor / max;
+  body += '<rect x="' + M.l + '" y="' + yb.toFixed(1) + '" width="' + iw() + '" height="' +
+    Math.max(0, yt - yb).toFixed(1) + '" fill="var(--band)"/>';
+  body += yAxis(max, function(v){ return v.toFixed(1) + "x"; });
+  body += '<text x="' + (M.l + 8) + '" y="' + (yb + 13).toFixed(1) + '" fill="var(--ink3)" font-size="10" ' +
+    'font-family="IBM Plex Mono, monospace">corridor ' + s.roiFloor + "x–" + s.roiCeiling + "x</text>";
+
+  var bw = iw() / dates.length;
+  var xy = pts.map(function(v, i){
+    return [M.l + bw * (i + 0.5), M.t + ih() - ih() * Math.min(v, max) / max];
+  });
+  if(xy.length === 1){
+    body += '<circle cx="' + xy[0][0].toFixed(1) + '" cy="' + xy[0][1].toFixed(1) +
+      '" r="5" fill="var(--accent)" stroke="var(--surface)" stroke-width="2"/>';
+  } else {
+    var dstr = xy.map(function(p, i){ return (i ? "L" : "M") + p[0].toFixed(1) + " " + p[1].toFixed(1); }).join(" ");
+    body += '<path d="' + dstr + '" fill="none" stroke="var(--accent)" stroke-width="2" ' +
+      'stroke-linecap="round" stroke-linejoin="round"/>';
+  }
+  xy.forEach(function(p, i){
+    var lastOne = i === xy.length - 1;
+    body += '<circle cx="' + p[0].toFixed(1) + '" cy="' + p[1].toFixed(1) + '" r="' + (lastOne ? 5 : 3.2) +
+      '" fill="' + (lastOne ? "var(--accent)" : "var(--surface)") + '" stroke="var(--accent)" ' +
+      'stroke-width="2" class="hv" data-tip="' + esc(fmtFull(dates[i]) + "|Cumulative ROI " +
+      roiTxt(pts[i])) + '"><title>' + esc(fmtDay(dates[i]) + ": " + roiTxt(pts[i])) + "</title></circle>";
+  });
+  if(xy.length){
+    var lp = xy[xy.length - 1];
+    body += '<text x="' + (lp[0] - 8).toFixed(1) + '" y="' + (lp[1] - 11).toFixed(1) +
+      '" text-anchor="end" fill="var(--ink)" font-size="11" font-weight="600" ' +
+      'font-family="IBM Plex Mono, monospace">' + roiTxt(pts[pts.length - 1]) + "</text>";
+  }
+  body += xLabels(dates);
+  return svgOpen() + body + "</svg>";
+}
+
+/* ================================================================== *
+ *  EVENTS
+ * ================================================================== */
+function wire(){
+  var dt = el("dt");
+  if(dt) dt.onchange = function(){ loadDate(this.value); };
+  if(el("prevday")) el("prevday").onclick = function(){ loadDate(shiftISO(state.date, -1)); };
+  if(el("clear")) el("clear").onclick = function(){
+    state.draft = emptyRows(); state.dirty = true; state.msg = ""; render();
+  };
+  if(el("save")) el("save").onclick = saveDay;
+  if(el("saveset")) el("saveset").onclick = saveSettings;
+  if(el("csv")) el("csv").onclick = exportCsv;
+
+  document.querySelectorAll(".entry input").forEach(function(inp){
+    inp.oninput = function(){
+      if(!state.draft) state.draft = emptyRows();
+      var v = this.value === "" ? null : Math.max(0, parseFloat(this.value));
+      state.draft[this.dataset.ag][this.dataset.k] = isFinite(v) ? v : null;
+      state.dirty = true; state.msg = "";
+      softRefresh(this);
+    };
+  });
+  document.querySelectorAll("[data-del]").forEach(function(b){
+    b.onclick = function(){ delDay(this.dataset.del); };
+  });
+  document.querySelectorAll("[data-edit]").forEach(function(b){
+    b.onclick = function(){ state.view = "log"; loadDate(this.dataset.edit); };
+  });
+  document.querySelectorAll(".hv").forEach(function(m){
+    m.addEventListener("mousemove", function(e){ showTip(e, this.dataset.tip); });
+    m.addEventListener("mouseleave", hideTip);
+  });
+}
+/* Re-render the row read-outs without stealing focus from the field being typed in. */
+function softRefresh(active){
+  var pos = active.selectionStart;
+  render();
+  var back = document.querySelector('.entry input[data-ag="' + active.dataset.ag +
+    '"][data-k="' + active.dataset.k + '"]');
+  if(back){
+    back.focus();
+    try { back.setSelectionRange(pos, pos); } catch(e){ /* number inputs may refuse */ }
+  }
+}
+function showTip(e, txt){
+  var t = el("tip"), parts = String(txt).split("|");
+  t.innerHTML = "<b>" + esc(parts[0]) + "</b>" + esc(parts[1] || "");
+  t.style.opacity = "1";
+  var x = Math.min(e.clientX + 14, window.innerWidth - 246);
+  t.style.left = x + "px";
+  t.style.top = Math.max(8, e.clientY - 54) + "px";
+}
+function hideTip(){ el("tip").style.opacity = "0"; }
+
+function loadDate(iso){
+  if(!iso) return;
+  state.date = iso;
+  var saved = state.days[iso];
+  state.draft = saved ? JSON.parse(JSON.stringify(saved)) : emptyRows();
+  state.dirty = false; state.msg = "";
+  render();
+}
+
+/* ---------------- persistence ---------------- */
+function saveDay(){
+  var rows = state.draft || emptyRows();
+  if(!hasAny(rows)){ state.msg = ""; alert("Nothing to save — enter at least one group’s spend."); return; }
+  var clean = {};
+  AGS.forEach(function(a){
+    clean[a] = {};
+    FIELDS.forEach(function(f){
+      var v = num(rows[a][f.k]);
+      clean[a][f.k] = v === null ? null : v;
+    });
+  });
+  if(state.demo){ state.days = {}; state.demo = false; }
+  state.days[state.date] = clean;
+  state.dirty = false;
+  state.msg = "Saved " + fmtDay(state.date) + ".";
+  lsSave();
+
+  if(!state.db){ render(); return; }
+  state.saving = true; render();
+  state.db.doc("days/" + state.date).set({
+    date: state.date, rows: clean, updatedAt: new Date().toISOString()
+  }).then(function(){
+    state.saving = false; state.msg = "Saved " + fmtDay(state.date) + " to the database.";
+    render();
+  }).catch(function(err){
+    state.saving = false;
+    state.msg = "";
+    alert("Could not save: " + (err && err.message ? err.message : "unknown error") +
+      "\nYour entry is still on screen — try Save again.");
+    render();
+  });
+}
+function delDay(iso){
+  if(!confirm("Delete the record for " + fmtDay(iso) + "? This cannot be undone.")) return;
+  delete state.days[iso];
+  lsSave();
+  render();
+  if(state.db && !state.demo){
+    state.db.doc("days/" + iso).delete().catch(function(err){
+      alert("Could not delete: " + (err && err.message ? err.message : "unknown error"));
+    });
+  }
+}
+function saveSettings(){
+  var s = Object.assign({}, state.settings);
+  document.querySelectorAll("[data-set]").forEach(function(i){
+    var v = num(i.value), k = i.dataset.set;
+    if(v === null) return;
+    s[k] = k === "returnRate" ? Math.min(0.95, Math.max(0, v / 100)) : Math.max(0.01, v);
+  });
+  state.settings = s;
+  lsSave();
+  render();
+  if(state.db) state.db.doc("config/settings").set(s).catch(function(){ /* keep the local change */ });
+}
+function exportCsv(){
+  var rr = state.settings.returnRate;
+  var head = ["Date","AG","Group","Spend","Impressions","Clicks","Orders","GrossRev","NetRev",
+              "TargetSpend","Pace","CTR","CPC","MaxCPC","CVR","ROI"];
+  var lines = [head.join(",")];
+  sortedDates().forEach(function(d){
+    GROUPS.forEach(function(g){
+      var r = state.days[d][g.ag];
+      if(!r || num(r.spend) === null) return;
+      var dv = derive(g, r);
+      lines.push([d, g.ag, '"' + g.name + '"', dv.spend, dv.impr, dv.clicks, dv.orders, dv.gross,
+        Math.round(dv.net), Math.round(dv.target),
+        dv.pace === null ? "" : dv.pace.toFixed(3),
+        dv.ctr === null ? "" : dv.ctr.toFixed(5),
+        dv.cpc === null ? "" : dv.cpc.toFixed(2),
+        dv.maxCPC.toFixed(2),
+        dv.cvr === null ? "" : dv.cvr.toFixed(5),
+        dv.roi === null ? "" : dv.roi.toFixed(3)].join(","));
+    });
+  });
+  var csv = lines.join("\n");
+  var name = "myntra-daily-tracker-" + todayISO() + ".csv";
+  if(state.downloads){
+    state.downloads.save({filename:name, data:csv}).catch(function(err){
+      if(err && err.code === "declined") return;
+      alert("Export failed: " + (err && err.message ? err.message : "unknown error"));
+    });
+    return;
+  }
+  /* Plain-page fallback: a normal browser download. Inert inside the
+     artifact viewer, which is why the capability is tried first. */
+  try {
+    var url = URL.createObjectURL(new Blob([csv], {type:"text/csv;charset=utf-8"}));
+    var a = document.createElement("a");
+    a.href = url; a.download = name;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(function(){ URL.revokeObjectURL(url); }, 2000);
+  } catch(e){
+    alert("Export is not available in this view.");
+  }
+}
+
+/* ------------------------------------------------------------------ *
+ * Storage. On claude.ai the artifact database holds the records and is
+ * authoritative. Served as a plain page (GitHub Pages), there is no
+ * database, so the same records are kept in this browser instead.
+ * ------------------------------------------------------------------ */
+var LS_KEY = "myntra-daily-desk-v1";
+var LS_OK = (function(){
+  try { localStorage.setItem(LS_KEY + "-probe", "1"); localStorage.removeItem(LS_KEY + "-probe"); return true; }
+  catch(e){ return false; }
+})();
+function lsLoad(){
+  if(!LS_OK) return null;
+  try {
+    var o = JSON.parse(localStorage.getItem(LS_KEY) || "null");
+    return (o && o.days && typeof o.days === "object") ? o : null;
+  } catch(e){ return null; }
+}
+function lsSave(){
+  if(!LS_OK || state.db) return;
+  try { localStorage.setItem(LS_KEY,
+    JSON.stringify({days: state.demo ? {} : state.days, settings: state.settings})); }
+  catch(e){ /* quota or a private window — the entry stays on screen */ }
+}
+
+/* ---------------- boot ---------------- */
+document.querySelectorAll(".tab").forEach(function(t){
+  t.onclick = function(){ state.view = this.dataset.view; hideTip(); render(); };
+});
+var saved = lsLoad();
+if(saved && Object.keys(saved.days).length){
+  state.days = saved.days;
+  state.demo = false;
+  if(saved.settings) Object.keys(DEFAULTS).forEach(function(k){
+    if(typeof saved.settings[k] === "number" && isFinite(saved.settings[k])) state.settings[k] = saved.settings[k];
+  });
+} else {
+  state.days = sampleDays();
+}
+state.draft = state.days[state.date] ? JSON.parse(JSON.stringify(state.days[state.date])) : emptyRows();
+if(state.demo) state.draft = emptyRows();
+render();
+
+if(window.claude && window.claude.use){
+  window.claude.use("db").then(function(db){
+    state.dbTried = true; state.db = db || null;
+    if(!db){ render(); return; }
+    db.doc("config/settings").onSnapshot(function(snap){
+      if(snap.exists){
+        var d = snap.data();
+        Object.keys(DEFAULTS).forEach(function(k){
+          if(typeof d[k] === "number" && isFinite(d[k])) state.settings[k] = d[k];
+        });
+        render();
+      }
+    }, function(){ /* settings stay at their defaults */ });
+
+    db.collection("days").orderBy("date").limit(400).onSnapshot(function(snap){
+      var days = {};
+      snap.docs.forEach(function(doc){
+        var d = doc.data();
+        if(!d || !d.rows) return;
+        days[d.date || doc.id] = d.rows;
+      });
+      if(Object.keys(days).length){
+        state.days = days; state.demo = false;
+        if(!state.dirty && !state.days[state.date]) state.draft = emptyRows();
+      } else if(!state.demo){
+        state.days = {};
+      }
+      render();
+    }, function(err){
+      state.msg = "";
+      console.warn("days subscription ended:", err && err.code);
+    });
+  }, function(){ state.dbTried = true; render(); });
+
+  window.claude.use("downloads").then(function(d){ state.downloads = d || null; render(); },
+    function(){ /* export stays hidden behind its alert */ });
+} else {
+  state.dbTried = true;
+  render();
+}
+</script>
+
+</body>
+</html>

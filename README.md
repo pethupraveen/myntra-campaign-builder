@@ -98,6 +98,8 @@ data/                CSV outputs — full scored master, active roster, queue, e
 index.html           self-contained HTML dashboard — plan, roster, bid calculator, and a
                      Performance tab that reads pasted Daily Tracker rows (no build step,
                      no dependencies, no server)
+daily/index.html     Daily Desk — type the five ad-group rows into a form instead of pasting
+                     them, and get the dashboard and the ranked action list back
 output/              Myntra_Campaign_Builder.xlsx — 9 tabs, formula-driven from a Control Panel
 docs/                strategy one-pager and weekly optimisation SOP
 ```
@@ -155,6 +157,26 @@ cumulative orders — so no bid moves on a three-day sample. A delivery fault al
 decision, because a group spending 40% of target has no ROI worth reading.
 
 `docs/strategy-and-sop.md` has the daily loop and the delivery-fault table.
+
+### The Daily Desk
+
+`daily/index.html` is the tracker as a web form, at
+`https://<your-username>.github.io/myntra-campaign-builder/daily/`. Pick a date, type the five rows,
+and pace, CPC, CTR, CVR, ROI and the flag compute as you type — the same formulas as the `Daily
+Tracker` columns I onwards. Three tabs: **Log the day**, **Performance** (blended ROI against the
+corridor, spend against target, per-group table, today's ranked actions) and **Records** (every saved
+day, editable, deletable, exportable as a CSV with one row per group per day).
+
+Where it saves depends on where it runs. Published as a Claude Artifact it writes each day to the
+artifact database as `days/YYYY-MM-DD`, so the record follows the account and several people see the
+same history. Served from GitHub Pages there is no database, so it keeps the days in that browser's
+local storage instead and says so on screen — export the CSV to move them. The **Assumptions** panel
+is the Control Panel's blue cells: budget, return rate, ROI floor and ceiling, days in month. Group
+shares stay pinned to the ₹15,000 baseline, so changing the budget rescales every daily target and
+every Max CPC the way `Control Panel` does.
+
+Nothing is logged yet on a fresh page, so it opens on six clearly-marked sample days — the first save
+clears them.
 
 ### Seeing it in the dashboard
 
