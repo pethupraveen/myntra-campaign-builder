@@ -96,6 +96,7 @@ src/                 scoring and planning pipeline (run in order)
   build_xlsx.py        builds the Excel workbook
 data/                styles_scored.csv — all 4,382 styles with scores, group and status
                      ad_group_summary.csv — the six groups with budgets, bids and projections
+                     model_names.csv — Style Id -> phone model, labelling every one of the 4,382
 index.html           the plan — how the budget splits, the roster, the bid calculator, the
                      playbook (no build step, no dependencies, no server)
 daily/index.html     the Daily Desk — log each day, read the performance back, keep the record
@@ -110,7 +111,7 @@ pip install pandas numpy openpyxl
 python src/engine.py       # data.csv -> scored.csv
 python src/groups.py       # scored.csv -> grouped.csv
 python src/model.py        # grouped.csv -> final.csv, summary.csv
-python src/build_xlsx.py   # -> Myntra_Campaign_Builder.xlsx
+python src/build_xlsx.py   # + data/model_names.csv -> Myntra_Campaign_Builder.xlsx
 ```
 
 The roster, queue and excluded lists are one filter off the master rather than their own

@@ -4,6 +4,9 @@ from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from openpyxl.utils import get_column_letter
 
 df=pd.read_csv('final.csv'); summ=pd.read_csv('summary.csv')
+# Style Id -> phone model, filled in by hand in the workbook and exported back here.
+# Any style missing from the file gets a blank cell, still highlighted for filling in.
+MODELS=pd.read_csv('data/model_names.csv',dtype={'Style Id':int}).set_index('Style Id')['Model Name'].to_dict()
 wb=Workbook(); ARIAL='Arial'
 BLUE=Font(name=ARIAL,size=10,color='0000FF'); BLK=Font(name=ARIAL,size=10)
 HDR=Font(name=ARIAL,size=10,bold=True,color='FFFFFF')
@@ -129,7 +132,7 @@ for i,t in enumerate([
     ws2.cell(row=r+2+i,column=1,value=t).font=SUB
 
 # ---------------- style tabs ----------------
-cols=['Style Id','Model Name (fill in)','Ad Group','Group Name','Rank in Group','Live Since','Days Live',
+cols=['Style Id','Model Name','Ad Group','Group Name','Rank in Group','Live Since','Days Live',
       'Organic Impressions','Inorganic Impressions','Total Impressions','Organic/Day','Ad Saturation',
       'Demand Score','Opportunity Score','Health','Max CPC Bid (Rs)','Monthly Budget (Rs)','Daily Budget (Rs)','Target ROI','Status']
 widths=[12,26,10,21,13,12,10,13,13,12,11,11,11,12,10,13,14,13,10,11]
@@ -142,12 +145,13 @@ def style_tab(name,data,title,note,budgets=True):
     hdr(w,4,cols,widths); w.freeze_panes='C5'
     for i,(_,x) in enumerate(data.iterrows()):
         r=5+i; gr=gmap[x['AG']]
-        vals=[int(x['Style Id']),'',x['AG'],x['Group Name'],int(x['Rank in Group']),x['Live Since'],int(x['Days Live']),
+        vals=[int(x['Style Id']),MODELS.get(int(x['Style Id']),''),x['AG'],x['Group Name'],int(x['Rank in Group']),x['Live Since'],int(x['Days Live']),
               int(x['Organic Impressions']),int(x['Inorganic Impressions']),int(x['Total Impressions']),
               round(x['Organic/Day'],2),round(x['Ad Saturation'],3),x['Demand Score'],x['Opportunity Score'],x['Health']]
         for ci,v in enumerate(vals,1):
             c=w.cell(row=r,column=ci,value=v); c.font=BLK
-        w.cell(row=r,column=2).fill=YFILL; w.cell(row=r,column=2).font=BLUE
+        if not vals[1]:
+            w.cell(row=r,column=2).fill=YFILL; w.cell(row=r,column=2).font=BLUE
         w.cell(row=r,column=11).number_format='#,##0.00'
         w.cell(row=r,column=12).number_format='0.0%'
         w.cell(row=r,column=16,value=f"='Control Panel'!$I${gr}").number_format='#,##0.00'
@@ -164,7 +168,7 @@ que=df[df.Status=='QUEUE'].sort_values(['AG','Rank in Group'])
 exc=df[df.Status=='EXCLUDED'].sort_values('Demand Score',ascending=False)
 
 style_tab('Active Roster',act,'ACTIVE ROSTER - 152 STYLES GETTING SPEND NOW',
- 'Set these up in Myntra Partner Portal. Column B is yours to fill with model names — send them to me and I will label every row.')
+ 'Set these up in Myntra Partner Portal. Column B names the phone each style fits, from data/model_names.csv.')
 style_tab('Rotation Queue',que,'ROTATION QUEUE - NEXT IN LINE',
  'Ranked by Opportunity Score. When an active style misses its ROI target for 2 weeks, pause it and promote the top queued style in the same group.',budgets=False)
 style_tab('Excluded - Dormant',exc,'EXCLUDED - NO AD SPEND',
@@ -348,7 +352,7 @@ ap.freeze_panes='D9'
 # ---------------- Master ----------------
 mdf=df[['Style Id','AG','Group Name','Status','Live Since','Days Live','Organic Impressions','Inorganic Impressions',
         'Total Impressions','Organic/Day','Ad Saturation','Demand Score','Opportunity Score','Health','Rank in Group']].copy()
-mdf.insert(1,'Model Name (fill in)','')
+mdf.insert(1,'Model Name',mdf['Style Id'].astype(int).map(MODELS).fillna(''))
 mw=wb.create_sheet('Master Data')
 mw['A1']='MASTER - ALL 4,382 STYLES SCORED'; mw['A1'].font=TITLE
 hdr(mw,3,list(mdf.columns),[12,26,9,21,11,12,10,13,13,12,11,11,11,12,10,13])
