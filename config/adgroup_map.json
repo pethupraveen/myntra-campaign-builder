@@ -1,0 +1,8 @@
+{
+  "_comment": "Portal ad-group name (exactly as it appears in the report) -> AG code. Several portal groups may map to one AG; their numbers are summed. Run fetch_daily.py --inspect to see the names the portal actually returns.",
+  "Hero Scale": "AG1",
+  "Rising Stars": "AG2",
+  "New Launch Incubator": "AG3",
+  "Steady Volume": "AG4",
+  "Ad-Dependent Retest": "AG5"
+}

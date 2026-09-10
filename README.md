@@ -94,6 +94,12 @@ src/                 scoring and planning pipeline (run in order)
   groups.py            assigns each style to an ad group
   model.py             sizes budgets, derives bids, allocates per-style spend
   build_xlsx.py        builds the Excel workbook
+  fetch_daily.py       replays the captured portal request for one day -> data/daily_log.csv
+  Write-DailyTracker.ps1  pushes that CSV into the workbook's Daily Tracker over Excel COM
+  Get-DailyLog.ps1     both of the above, one call
+config/              adgroup_map.json — portal ad-group name -> AG1..AG5
+                     myntra_fields.json — optional overrides when a metric is not auto-detected
+secrets/             the captured browser request (gitignored, holds your session cookie)
 data/                styles_scored.csv — all 4,382 styles with scores, group and status
                      ad_group_summary.csv — the six groups with budgets, bids and projections
                      model_names.csv — Style Id -> phone model, labelling every one of the 4,382
@@ -190,6 +196,64 @@ boundary. Days that already exist are named before anything is replaced.
 
 Nothing is logged yet on a fresh page, so it opens on six clearly-marked sample days — the first save
 clears them.
+
+### Pulling the day from the portal
+
+The numbers are typed into the Desk or the workbook by hand, or fetched from the ads portal by
+`src/fetch_daily.py`.
+
+Myntra publishes no ad API and issues no service credential — the report you read at
+`advertising.myntra.com/ad-user/product-listing-ads/CMP2496557` is an XHR the page makes for
+itself, authenticated by your seller session cookie. So the request is not written into this
+repo: it is **captured once from your browser and replayed with the date swapped**.
+
+**Capture it.** In Chrome, on the campaign page, set the date range to a single day. Then
+`F12` → **Network** → reload → click the request that returns the ad-group table → right-click →
+**Copy → Copy as cURL (bash)** → paste the whole thing into `secrets/myntra_curl.txt`.
+That file holds a live session cookie and is gitignored. Re-capture when it expires — usually
+days to weeks; the fetcher says so plainly when it does.
+
+**Run it.**
+
+```powershell
+powershell -File src/Get-DailyLog.ps1                     # yesterday, CSV + workbook
+powershell -File src/Get-DailyLog.ps1 -Date 2026-09-09
+powershell -File src/Get-DailyLog.ps1 -CsvOnly            # leave the workbook alone
+```
+
+Or the two halves on their own:
+
+```bash
+python src/fetch_daily.py --date 2026-09-09 --dry-run   # show the request, send nothing
+python src/fetch_daily.py --date 2026-09-09 --inspect   # dump the response keys and rows
+python src/fetch_daily.py --date 2026-09-09
+```
+
+Every date in the captured URL and body is rewritten to the day you ask for — ISO, `dd-mm-yyyy`
+and epoch-millisecond stamps, the last keeping its time of day so a range start stays a start
+and an end stays an end. If the capture carried no date at all the fetcher refuses to send,
+rather than silently refetching whatever range was on screen when you copied it.
+
+The response is read structurally, not by a hardcoded schema: the longest list of objects in it
+is the report table, and the metric columns are matched by name (`adGroupName`, `metrics.spend`,
+`impressions`, `clicks`, `orders`, `revenue` and the usual variants). When a metric cannot be
+found, `--inspect` prints every key it saw and you name the right one in
+`config/myntra_fields.json`. Portal ad groups are rolled up to `AG1`–`AG5` through
+`config/adgroup_map.json`; several portal groups may map to one AG and their numbers are summed,
+and anything unmapped is named and skipped rather than quietly dropped.
+
+Results land in `data/daily_log.csv` — `Date,AG,Group,Spend,Impressions,Clicks,Orders,GrossRev`,
+one row per group per day, upserted, so refetching a day corrects it instead of doubling it.
+That header is the Daily Desk's export header truncated to the input columns, so the file also
+pastes into **Records → Import from the workbook**.
+
+`Write-DailyTracker.ps1` then writes only the five yellow input columns (D–H) of the `Daily
+Tracker` tab, in place over Excel COM — the workbook carries days you typed that nothing in
+`src/` can regenerate, so it is edited, never rebuilt. It locates each row by arithmetic off the
+start date in `B5` and then checks the `AG` code actually sitting in column B before writing, so
+a moved layout stops the run instead of filling in the wrong group. A day outside the 31-day
+window is reported and skipped. If you already have the workbook open, your own Excel instance
+is reused rather than killed. `-WhatIf` shows every row it would touch and writes nothing.
 
 ## Assumptions to replace with real numbers
 

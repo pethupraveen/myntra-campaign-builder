@@ -8,3 +8,7 @@ grouped.csv
 final.csv
 summary.csv
 params.json
+# captured browser session - never commit
+secrets/
+# fetched performance log
+data/daily_log.csv
